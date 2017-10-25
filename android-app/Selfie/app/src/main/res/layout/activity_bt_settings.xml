@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    tools:context="com.perciax.selfie.BtSettingsActivity">
+
+    <TextView
+        android:id="@+id/txtBtSettings"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Bluetooth Settings" />
+
+    <Button
+        android:id="@+id/btnBtOn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:clickable="true"
+        android:onClick="btOn"
+        android:text="Turn On" />
+
+    <Button
+        android:id="@+id/btnBtOff"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:onClick="btOff"
+        android:text="turn off" />
+
+    <Button
+        android:id="@+id/btnBtVisible"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:onClick="btVisible"
+        android:text="Get visible" />
+
+    <Button
+        android:id="@+id/btnBtShowPaired"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:onClick="btShowPaired"
+        android:text="Show Paired" />
+
+    <Button
+        android:id="@+id/btnBtDiscover"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:onClick="btDiscover"
+        android:text="discover devices" />
+
+    <TextView
+        android:id="@+id/txtBtSupport"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="" />
+
+
+</LinearLayout>

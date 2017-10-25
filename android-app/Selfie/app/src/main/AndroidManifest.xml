@@ -20,6 +20,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity android:name=".BtSettingsActivity">
+
+        </activity>
+
+        <activity android:name=".BtDeviceListActivity">
+
+        </activity>
     </application>
 
 </manifest>

@@ -1,3 +1,24 @@
 <resources>
     <string name="app_name">Selfie</string>
+    <string name="text_list_devices">List of devices</string>
+
+    <string name="btn_bt_settings">Bluetooth Settings</string>
+    <string name="btn_up">Up</string>
+    <string name="btn_left">Left</string>
+    <string name="btn_down">Down</string>
+    <string name="btn_right">Right</string>
+    <string name="action_knr">KNR</string>
+    <string name="text_pair">Pair</string>
+
+    <string name="btn_char_robot_control">OmniPlatform</string>
+    <string name="btn_pwm_robot_control">PWM Car</string>
+    <string name="default_MAC">30:14:12:26:03:07</string>
+    <string name="PERCIAK_MAC">C8:F7:33:67:D5:67</string>
+    <string name="HUAWEI_MAC">AC:CF:85:DB:62:36</string>
+    <string name="default_goalMotorLeft">100</string>
+    <string name="default_goalMotorRight">100</string>
+    <string name="default_commandRight">R</string>
+    <string name="default_commandMore">M</string>
+    <string name="default_commandLeft">L</string>
+    <string name="btn_accel_robot_control">Accelerometer</string>
 </resources>
