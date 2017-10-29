@@ -32,6 +32,10 @@
         <activity android:name=".BtConnectActivity">
 
         </activity>
+
+        <activity android:name=".BtCommActivity">
+
+        </activity>
     </application>
 
 </manifest>

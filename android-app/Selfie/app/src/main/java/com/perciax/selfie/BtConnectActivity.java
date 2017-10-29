@@ -74,6 +74,9 @@ public class BtConnectActivity extends Activity {
                 BluetoothDevice device = mDeviceList.get(position);
                 String macAddress = device.getAddress();
                 showToast("MAC: " + macAddress);
+                Intent i = new Intent(getApplicationContext(), BtCommActivity.class);
+                i.putExtra("address", macAddress);
+                startActivity(i);
             }
         });
 
@@ -92,24 +95,6 @@ public class BtConnectActivity extends Activity {
 
     private void showToast(String message) {
         Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show();
-    }
-
-    public void putPairedDevicesToIntent() {
-        Set<BluetoothDevice> pairedDevices = mBluetoothAdapter.getBondedDevices();
-
-        if (pairedDevices == null || pairedDevices.size() == 0) {
-            showToast("No Paired Devices Found");
-        } else {
-            ArrayList<BluetoothDevice> list = new ArrayList<BluetoothDevice>();
-
-            list.addAll(pairedDevices);
-
-            Intent intent = new Intent(getApplicationContext(), BtConnectActivity.class);
-
-            intent.putParcelableArrayListExtra("device.list", list);
-
-        }
-
     }
 
 }
