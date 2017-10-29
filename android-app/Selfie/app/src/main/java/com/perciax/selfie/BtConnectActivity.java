@@ -1,21 +1,23 @@
 package com.perciax.selfie;
 
 import android.app.Activity;
+import android.app.ProgressDialog;
+import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.os.Bundle;
 import android.widget.ListView;
 import android.widget.Toast;
 
-import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Set;
 
-public class BtDeviceListActivity extends Activity {
+public class BtConnectActivity extends Activity {
+    private BluetoothAdapter mBluetoothAdapter;
     private ListView mListView;
-    private BtDeviceListAdapter mAdapter;
+    private BtConnectListAdapter mAdapter;
     private final BroadcastReceiver mPairReceiver = new BroadcastReceiver() {
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
@@ -34,45 +36,56 @@ public class BtDeviceListActivity extends Activity {
             }
         }
     };
+    //Progress Dialog declaration
+    private ProgressDialog mProgressDlg;
+    //device list
     private ArrayList<BluetoothDevice> mDeviceList;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        setContentView(R.layout.activity_bt_device_list);
+        setContentView(R.layout.activity_bt_connect);
 
-        mDeviceList = getIntent().getExtras().getParcelableArrayList("device.list");
-        showToast(mDeviceList.toString());
+        //get Bluetooth Adapter
+        mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+
+        Set<BluetoothDevice> pairedDevices = mBluetoothAdapter.getBondedDevices();
+
+        mDeviceList = new ArrayList<BluetoothDevice>();
+
+        if (pairedDevices == null || pairedDevices.size() == 0) {
+            showToast("No Paired Devices Found");
+        } else {
+
+            mDeviceList.addAll(pairedDevices);
+            showToast(mDeviceList.toString());
+
+        }
 
         mListView = (ListView) findViewById(R.id.lv_paired);
 
-        mAdapter = new BtDeviceListAdapter(this);
+        mAdapter = new BtConnectListAdapter(this);
 
         mAdapter.setData(mDeviceList);
-        mAdapter.setListener(new BtDeviceListAdapter.OnPairButtonClickListener() {
+        mAdapter.setListener(new BtConnectListAdapter.OnButtonClickListener() {
             @Override
-            public void onPairButtonClick(int position) {
+            public void onButtonClick(int position) {
                 BluetoothDevice device = mDeviceList.get(position);
-
-                if (device.getBondState() == BluetoothDevice.BOND_BONDED) {
-                    unpairDevice(device);
-                } else {
-                    showToast("Pairing...");
-
-                    pairDevice(device);
-                }
+                String macAddress = device.getAddress();
+                showToast("MAC: " + macAddress);
             }
         });
 
         mListView.setAdapter(mAdapter);
 
-        registerReceiver(mPairReceiver, new IntentFilter(BluetoothDevice.ACTION_BOND_STATE_CHANGED));
+        //registerReceiver(mPairReceiver, new IntentFilter(BluetoothDevice.ACTION_BOND_STATE_CHANGED));
+
     }
 
     @Override
     public void onDestroy() {
-        unregisterReceiver(mPairReceiver);
+        //unregisterReceiver(mPairReceiver);
 
         super.onDestroy();
     }
@@ -81,22 +94,22 @@ public class BtDeviceListActivity extends Activity {
         Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show();
     }
 
-    private void pairDevice(BluetoothDevice device) {
-        try {
-            Method method = device.getClass().getMethod("createBond", (Class[]) null);
-            method.invoke(device, (Object[]) null);
-        } catch (Exception e) {
-            e.printStackTrace();
+    public void putPairedDevicesToIntent() {
+        Set<BluetoothDevice> pairedDevices = mBluetoothAdapter.getBondedDevices();
+
+        if (pairedDevices == null || pairedDevices.size() == 0) {
+            showToast("No Paired Devices Found");
+        } else {
+            ArrayList<BluetoothDevice> list = new ArrayList<BluetoothDevice>();
+
+            list.addAll(pairedDevices);
+
+            Intent intent = new Intent(getApplicationContext(), BtConnectActivity.class);
+
+            intent.putParcelableArrayListExtra("device.list", list);
+
         }
+
     }
 
-    private void unpairDevice(BluetoothDevice device) {
-        try {
-            Method method = device.getClass().getMethod("removeBond", (Class[]) null);
-            method.invoke(device, (Object[]) null);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 }

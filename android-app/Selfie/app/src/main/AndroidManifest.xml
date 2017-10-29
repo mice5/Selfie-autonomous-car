@@ -28,6 +28,10 @@
         <activity android:name=".BtDeviceListActivity">
 
         </activity>
+
+        <activity android:name=".BtConnectActivity">
+
+        </activity>
     </application>
 
 </manifest>

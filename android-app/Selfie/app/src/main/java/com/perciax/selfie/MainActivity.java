@@ -9,6 +9,7 @@ import android.widget.Button;
 public class MainActivity extends AppCompatActivity {
 
     private Button btnBtSettings;
+    private Button btnBtConnect;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -18,13 +19,24 @@ public class MainActivity extends AppCompatActivity {
 
          /* Button */
 
+        btnBtConnect = (Button) findViewById(R.id.btn_bt_conn);
+
+        btnBtConnect.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent i = new Intent(getApplicationContext(), BtConnectActivity.class);
+                startActivity(i);
+            }
+        });
+
+         /* Button */
+
         btnBtSettings = (Button) findViewById(R.id.btn_bt_setings);
-        //button listener starts PwmButtonControlActivity
+
         btnBtSettings.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent i = new Intent(getApplicationContext(), BtSettingsActivity.class);
-                //i.putExtra(OmniPlatformControlActivity.ROBOT_ID, 0);
                 startActivity(i);
             }
         });
@@ -35,4 +47,5 @@ public class MainActivity extends AppCompatActivity {
 
         super.onDestroy();
     }
+
 }
