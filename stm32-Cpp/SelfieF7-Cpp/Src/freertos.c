@@ -61,10 +61,10 @@ osThreadId LightingTaskHandle;
 osThreadId GyroTaskHandle;
 osThreadId BatteryManagerHandle;
 osThreadId SteeringTaskHandle;
-osThreadId CzujnikiTaskHandle;
 osThreadId BTTaskHandle;
 osThreadId FutabaTaskHandle;
 osThreadId GovernorTaskHandle;
+osThreadId USBTaskHandle;
 
 /* USER CODE BEGIN Variables */
 
@@ -76,12 +76,11 @@ extern void StartLightingTask(void const * argument);
 extern void StartGyroTask(void const * argument);
 extern void StartBatteryManager(void const * argument);
 extern void StartSteeringTask(void const * argument);
-extern void StartCzujnikiTask(void const * argument);
 extern void StartBTTask(void const * argument);
 extern void StartFutabaTask(void const * argument);
 extern void StartGovernorTask(void const * argument);
+extern void StartUSBTask(void const * argument);
 
-extern void MX_USB_DEVICE_Init(void);
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
 /* USER CODE BEGIN FunctionPrototypes */
@@ -145,10 +144,6 @@ void MX_FREERTOS_Init(void) {
   osThreadDef(SteeringTask, StartSteeringTask, osPriorityHigh, 0, 128);
   SteeringTaskHandle = osThreadCreate(osThread(SteeringTask), NULL);
 
-  /* definition and creation of CzujnikiTask */
-  osThreadDef(CzujnikiTask, StartCzujnikiTask, osPriorityNormal, 0, 128);
-  CzujnikiTaskHandle = osThreadCreate(osThread(CzujnikiTask), NULL);
-
   /* definition and creation of BTTask */
   osThreadDef(BTTask, StartBTTask, osPriorityBelowNormal, 0, 128);
   BTTaskHandle = osThreadCreate(osThread(BTTask), NULL);
@@ -160,6 +155,10 @@ void MX_FREERTOS_Init(void) {
   /* definition and creation of GovernorTask */
   osThreadDef(GovernorTask, StartGovernorTask, osPriorityHigh, 0, 256);
   GovernorTaskHandle = osThreadCreate(osThread(GovernorTask), NULL);
+
+  /* definition and creation of USBTask */
+  osThreadDef(USBTask, StartUSBTask, osPriorityHigh, 0, 512);
+  USBTaskHandle = osThreadCreate(osThread(USBTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -173,8 +172,6 @@ void MX_FREERTOS_Init(void) {
 /* StartDefaultTask function */
 void StartDefaultTask(void const * argument)
 {
-  /* init code for USB_DEVICE */
-  MX_USB_DEVICE_Init();
 
   /* USER CODE BEGIN StartDefaultTask */
   /* Infinite loop */

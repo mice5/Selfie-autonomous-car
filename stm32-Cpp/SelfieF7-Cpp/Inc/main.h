@@ -65,8 +65,8 @@
 #define VBAT_GPIO_Port GPIOC
 #define CURRENT_Pin GPIO_PIN_1
 #define CURRENT_GPIO_Port GPIOC
-#define SharpAnal_Pin GPIO_PIN_2
-#define SharpAnal_GPIO_Port GPIOC
+#define AN_IN_Pin GPIO_PIN_2
+#define AN_IN_GPIO_Port GPIOC
 #define ENC2_A_Pin GPIO_PIN_0
 #define ENC2_A_GPIO_Port GPIOA
 #define ENC2_B_Pin GPIO_PIN_1
@@ -82,16 +82,6 @@
 #define MPU_DRDY_EXTI_IRQn EXTI4_IRQn
 #define SD_CS_Pin GPIO_PIN_11
 #define SD_CS_GPIO_Port GPIOE
-#define Parking_Button_Pin GPIO_PIN_14
-#define Parking_Button_GPIO_Port GPIOB
-#define Obstacle_Button_Pin GPIO_PIN_15
-#define Obstacle_Button_GPIO_Port GPIOB
-#define Vision_Reset_Pin GPIO_PIN_6
-#define Vision_Reset_GPIO_Port GPIOC
-#define Change_Lane_Pin GPIO_PIN_8
-#define Change_Lane_GPIO_Port GPIOC
-#define Cross_Obstacles_Pin GPIO_PIN_9
-#define Cross_Obstacles_GPIO_Port GPIOC
 #define VBUS_SENS_Pin GPIO_PIN_8
 #define VBUS_SENS_GPIO_Port GPIOA
 #define SD_DETECT_Pin GPIO_PIN_3
@@ -106,14 +96,10 @@
 #define LED_RED_GPIO_Port GPIOB
 #define LED_BLUE_Pin GPIO_PIN_7
 #define LED_BLUE_GPIO_Port GPIOB
-#define O10_Pin GPIO_PIN_8
-#define O10_GPIO_Port GPIOB
+#define LED_STRIP_Pin GPIO_PIN_8
+#define LED_STRIP_GPIO_Port GPIOB
 #define O5_Pin GPIO_PIN_9
 #define O5_GPIO_Port GPIOB
-#define CzujnikPrawy_Pin GPIO_PIN_0
-#define CzujnikPrawy_GPIO_Port GPIOE
-#define CzujnikLewy_Pin GPIO_PIN_1
-#define CzujnikLewy_GPIO_Port GPIOE
 
 /* ########################## Assert Selection ############################## */
 /**

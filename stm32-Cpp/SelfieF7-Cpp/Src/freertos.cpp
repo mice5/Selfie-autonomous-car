@@ -53,6 +53,7 @@
 
 /* USER CODE BEGIN Includes */
 #include "Allshit.h"
+#include "tim.h"
 extern "C" {
 /* USER CODE END Includes */
 
@@ -62,19 +63,19 @@ osThreadId LightingTaskHandle;
 osThreadId GyroTaskHandle;
 osThreadId BatteryManagerHandle;
 osThreadId SteeringTaskHandle;
-osThreadId CzujnikiTaskHandle;
 osThreadId BTTaskHandle;
 osThreadId FutabaTaskHandle;
 osThreadId GovernorTaskHandle;
+osThreadId USBTaskHandle;
 
 /* USER CODE BEGIN Variables */
-
+uint32_t rtosTick;
 /* USER CODE END Variables */
 
 /* Function prototypes -------------------------------------------------------*/
 void StartDefaultTask(void const * argument);
+void StartUSBTask(void const * argument){};
 
-extern void MX_USB_DEVICE_Init(void);
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
 /* USER CODE BEGIN FunctionPrototypes */
@@ -84,17 +85,20 @@ void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 /* Hook prototypes */
 void configureTimerForRunTimeStats(void);
 unsigned long getRunTimeCounterValue(void);
-
+void Stats_IncTick(void);
 /* USER CODE BEGIN 1 */
 /* Functions needed when configGENERATE_RUN_TIME_STATS is on */
-__weak void configureTimerForRunTimeStats(void)
-{
-
+void configureTimerForRunTimeStats(void) {
+	rtosTick = 0;
+	MX_TIM7_Init();
+	HAL_TIM_Base_Start_IT(&htim7);
 }
 
-__weak unsigned long getRunTimeCounterValue(void)
-{
-return 0;
+unsigned long getRunTimeCounterValue(void) {
+	return rtosTick;
+}
+void Stats_IncTick(void) {
+	rtosTick++;
 }
 /* USER CODE END 1 */
 
@@ -138,10 +142,6 @@ void MX_FREERTOS_Init(void) {
   osThreadDef(SteeringTask, StartSteeringTask, osPriorityHigh, 0, 128);
   SteeringTaskHandle = osThreadCreate(osThread(SteeringTask), NULL);
 
-  /* definition and creation of CzujnikiTask */
-  osThreadDef(CzujnikiTask, StartCzujnikiTask, osPriorityNormal, 0, 128);
-  CzujnikiTaskHandle = osThreadCreate(osThread(CzujnikiTask), NULL);
-
   /* definition and creation of BTTask */
   osThreadDef(BTTask, StartBTTask, osPriorityBelowNormal, 0, 128);
   BTTaskHandle = osThreadCreate(osThread(BTTask), NULL);
@@ -153,6 +153,10 @@ void MX_FREERTOS_Init(void) {
   /* definition and creation of GovernorTask */
   osThreadDef(GovernorTask, StartGovernorTask, osPriorityHigh, 0, 256);
   GovernorTaskHandle = osThreadCreate(osThread(GovernorTask), NULL);
+
+  /* definition and creation of USBTask */
+  osThreadDef(USBTask, StartUSBTask, osPriorityHigh, 0, 512);
+  USBTaskHandle = osThreadCreate(osThread(USBTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -166,8 +170,6 @@ void MX_FREERTOS_Init(void) {
 /* StartDefaultTask function */
 void StartDefaultTask(void const * argument)
 {
-  /* init code for USB_DEVICE */
-  MX_USB_DEVICE_Init();
 
   /* USER CODE BEGIN StartDefaultTask */
   /* Infinite loop */
