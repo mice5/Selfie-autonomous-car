@@ -61,7 +61,7 @@
 #include "gpio.h"
 
 /* USER CODE BEGIN Includes */
-
+#include "Futaba.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -247,7 +247,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   }
   /* USER CODE END Callback 1 */
 }
-
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+	if (huart->Instance == USART3) //aparatura
+	{
+		FutabaRx_Irq();
+	}
+}
 /**
   * @brief  This function is executed in case of error occurrence.
   * @param  file: The file name as string.

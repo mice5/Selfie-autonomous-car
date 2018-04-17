@@ -16,6 +16,7 @@ void StartCzujnikiTask(void const * argument);
 void StartBTTask(void const * argument);
 void StartFutabaTask(void const * argument);
 void StartGovernorTask(void const * argument);
+void StartUSBTask(void const * argument);
 
 
 #endif /* TASKS_ALLSHIT_H_ */

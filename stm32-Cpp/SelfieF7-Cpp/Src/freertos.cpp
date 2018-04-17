@@ -74,7 +74,6 @@ uint32_t rtosTick;
 
 /* Function prototypes -------------------------------------------------------*/
 void StartDefaultTask(void const * argument);
-void StartUSBTask(void const * argument){};
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 

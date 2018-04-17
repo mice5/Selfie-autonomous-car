@@ -96,8 +96,6 @@
 #define LED_RED_GPIO_Port GPIOB
 #define LED_BLUE_Pin GPIO_PIN_7
 #define LED_BLUE_GPIO_Port GPIOB
-#define LED_STRIP_Pin GPIO_PIN_8
-#define LED_STRIP_GPIO_Port GPIOB
 #define O5_Pin GPIO_PIN_9
 #define O5_GPIO_Port GPIOB
 
