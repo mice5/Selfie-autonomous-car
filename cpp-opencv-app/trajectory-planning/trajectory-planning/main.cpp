@@ -8,13 +8,17 @@ const int Height = 480;
 const int Width = 640;
 
 //rectangle algorithm params
-int number_of_rec_cols =40;
-int number_of_rec_raws =10; //liczba pasów detekcji //slidery ustawiaja
+int number_of_rec_cols = 40;
+int number_of_rec_raws = 10; //liczba pasów detekcji //slidery ustawiaja
 
 //main MAT
 Mat w_mat = Mat::zeros( Height, Width, CV_8UC3 ); //blank matri
 Mat y_mat = Mat::zeros(Height, Width, CV_8UC3 );
-Mat test_mat = Mat::zeros(Height, Width, CV_8UC3 );
+
+Mat wy_test_mat = Mat::zeros(Height, Width, CV_8UC3 );
+Mat wy_mat = Mat::zeros(Height, Width, CV_8UC3 );
+
+
 
 //send average angle
 uint32_t average_angle_counter = 0;
@@ -33,13 +37,25 @@ int main(int argc, char** argv)
     //splines
     spline_t y_spline;
     spline_t y_path;
-    spline_t test_spline;
-    spline_t test_path;
+    spline_t w_spline;
+    spline_t w_path;
+
+    //set default spline = go straigth
+    vector<Point> straight_vector;
+    straight_vector.push_back(Point(Width/2,Height));
+    straight_vector.push_back(Point(Width/2,Height/2));
+    straight_vector.push_back(Point(Width/2,0));
+
+    y_path.set_spline(straight_vector);
+    y_spline.set_spline(straight_vector);
+
+    w_path.set_spline(straight_vector);
+    w_spline.set_spline(straight_vector);
+
 
     //tangents
     tangent y_tangent;
-    tangent test_tangent;
-
+    tangent w_tangent;
 
 
     //sharedmemory
@@ -68,6 +84,9 @@ int main(int argc, char** argv)
     USB_COM.init();//init
 
     init_trackbars();
+
+    int y_begin_flag = 0;
+    int w_begin_flag = 0;
 ////////////////////////////////////////////WHILE///////////////////////////////////////////////////
 while(1)
 {
@@ -87,20 +106,48 @@ while(1)
     //get new set of points
     shm_lane_points.pull_line_data(y_point_vector,w_point_vector,c_point_vector);
     shm_usb_to_stm.pull_usb_data(usb_from_vision);
+
+
+    //begin y condition
+    if(y_point_vector.size()>10)
+    {
+        y_begin_flag = 1;
+    }
+    if(w_point_vector.size()>10)
+    {
+        w_begin_flag = 1;
+    }
     //shm_lidar_points.pull_lidar_data(l_point_vector);
 
     //preview of received points
-    points_preview(y_point_vector,test_mat,CV_RGB(255,255,255));
-    imshow("przychodzace", test_mat);
+    points_preview(w_point_vector,wy_test_mat,CV_RGB(255,255,255));
+    points_preview(y_point_vector,wy_test_mat,CV_RGB(255,255,0));
+    imshow("Podglad", wy_test_mat);
 
-    //calculate trajectory
-    points_to_mat(y_mat,y_point_vector);
-    rectangle_optimize(y_mat,y_spline);
-    one_line_planner(y_spline,rect_slider[4],y_path);
 
-    //slider defines x point to derive
+    if(y_begin_flag)
+    {
+        points_to_mat(y_mat,y_point_vector);
+        rectangle_optimize(y_mat,y_spline);
+        one_line_planner(y_spline,rect_slider[4],y_path);
+
+    }
+
+    if(w_begin_flag)
+    {
+        points_to_mat(w_mat,w_point_vector);
+        rectangle_optimize(w_mat,w_spline);
+        one_line_planner(w_spline,rect_slider[4],w_path);
+    }
+
+
+
+    //calculate tangents
     y_tangent.calculate(y_path,rect_slider[3]);
     y_tangent.angle();
+
+    w_tangent.calculate(w_path,rect_slider[3]);
+    w_tangent.angle();
 
     #endif
 
@@ -124,12 +171,13 @@ while(1)
         uint32_t angle_to_send;
         angle_to_send = angle_sum/3;
         velocity = left_slider[0];
-
+        velocity = 500;
         //send data to STM
         USB_COM.data_pack(velocity,angle,usb_from_vision,&to_send);
         USB_COM.send_buf(to_send);
-        USB_COM.read_buf(1);
 
+        //read data from STM
+        USB_COM.read_buf(1);
 
         angle_sum = 0;
         average_angle_counter = 0;
@@ -143,6 +191,7 @@ while(1)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
      //display section
     string label;
+
     #ifdef TEST_MODE
 
         //test display
@@ -160,21 +209,29 @@ while(1)
 
     #ifdef DEBUG_MODE
         //test display
-       y_spline.draw(y_mat,CV_RGB(20,20,250));//draw white right line
-       y_path.draw(y_mat,CV_RGB(225,20,100));
+        add(y_mat,w_mat,wy_mat);
 
 
+        y_spline.draw(wy_mat,CV_RGB(255,255,0));//draw white right line
+        y_path.draw(wy_mat,CV_RGB(225,20,100));
 
+        w_spline.draw(wy_mat,CV_RGB(255,255,255));//draw white right line
+        w_path.draw(wy_mat,CV_RGB(225,20,100));
 
-       y_tangent.draw(y_mat,CV_RGB(255,255,0));
+        y_tangent.draw(wy_mat,CV_RGB(255,255,0));
 
         label  = "traj_ang: "+ std::to_string(y_tangent.angle_deg);
         putText(y_mat, label, Point(450, 40), FONT_HERSHEY_SIMPLEX, 0.5, CV_RGB(0,255,0), 1.0);
 
         //show white line mat
-        imshow("tryb DEBUG",y_mat);
-        y_mat = Mat::zeros( 480, 640, CV_8UC3 );//zero matrix
-        test_mat = Mat::zeros( 480, 640, CV_8UC3 );//zero matrix
+        imshow("tryb DEBUG",wy_mat);
+
+        //clean matrixes
+        wy_mat = Mat::zeros(480,640,CV_8UC3);
+        w_mat = Mat::zeros(480,640,CV_8UC3);
+        y_mat = Mat::zeros(480,640,CV_8UC3);
+        wy_test_mat = Mat::zeros( 480, 640, CV_8UC3 );//zero matrix
+
     #endif
 
 

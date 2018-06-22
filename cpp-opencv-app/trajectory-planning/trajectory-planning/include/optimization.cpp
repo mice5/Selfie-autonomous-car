@@ -4,7 +4,7 @@ using namespace std;
 using namespace cv;
 
 
-int param = 5;
+int param = 3;
 bool rectangle_optimize(Mat& point_mat,spline_t& spl)
 {
     vector<Point> spline_points;
