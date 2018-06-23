@@ -37,12 +37,8 @@ HIDS hCam = 1;
 bool close_app = false;
 std::mutex mu;
 
-// Function declarations
-//
-
 int main()
 {
-     cv::Mat test(480, 640, CV_8UC3);
 #ifdef DEBUG_MODE
     //FPS
     struct timespec start, end;
@@ -63,6 +59,15 @@ int main()
     cv::Mat undist_frame, cameraMatrix, distCoeffs;
     cv::Mat cone_frame_out;
     cv::Mat frame_out_yellow, frame_out_white, frame_out_edge_yellow, frame_out_edge_white;
+    cv::Mat test_lane(CAM_RES_Y, CAM_RES_X, CV_8UC3);
+    cv::Mat test_scene(CAM_RES_Y, CAM_RES_X, CV_8UC3);
+
+    // Scene variables
+    bool reset_stm = false;
+    bool red_light_visible = false;
+    bool green_light_visible = false;
+    bool stop_line_detected = false;
+    uint32_t stop_line_distance = 0;
 
 #ifdef STOPLIGHTS_MODE
     //cv::Mats used in stoplight algorythm
@@ -72,7 +77,6 @@ int main()
 
 #endif
 
-    // Declaration of std::vector variables
     std::vector<std::vector<cv::Point>> yellow_vector;
     std::vector<std::vector<cv::Point>> white_vector;
 
@@ -256,10 +260,14 @@ cv::namedWindow("Frame_ids", 1);
         laneDetector.drawPoints(white_vector, white_vector_frame);
 
         // Push data
-        std::cout << "Push" << std::endl;
-        shm_lane_points.push_data(yellow_vector, white_vector, white_vector); // <-- Do zmiany trzeci wektor z pacholkami
-        std::cout << "Pull" << std::endl;
-        //shm_lane_points.pull_data(test);
+        shm_lane_points.push_lane_data(yellow_vector, white_vector, cones_vector);
+        // Test pull
+        //shm_lane_points.pull_lane_data(test-lane);
+
+        // Push data
+        shm_usb_to_send.push_scene_data(reset_stm, red_light_visible, green_light_visible, stop_line_detected, stop_line_distance);
+        // Test pull
+        // shm_usb_to_send.pull_scene_data();
 
 
 #ifdef DEBUG_MODE
@@ -283,6 +291,7 @@ cv::namedWindow("Frame_ids", 1);
 
         yellow_vector_frame = cv::Mat::zeros(CAM_RES_Y, CAM_RES_X, CV_8UC3);
         white_vector_frame = cv::Mat::zeros(CAM_RES_Y, CAM_RES_X, CV_8UC3);
+        test_lane = cv::Mat::zeros(CAM_RES_Y, CAM_RES_X, CV_8UC3);
 
         // Get input from user
         char keypressed = (char)cv::waitKey(FRAME_TIME);

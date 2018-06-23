@@ -36,9 +36,8 @@ int main(int argc, char** argv)
 
     //splines
     spline_t y_spline;
-    spline_t y_path;
+    spline_t trajectory_path;
     spline_t w_spline;
-    spline_t w_path;
 
     //set default spline = go straigth
     vector<Point> straight_vector;
@@ -46,11 +45,9 @@ int main(int argc, char** argv)
     straight_vector.push_back(Point(Width/2,Height/2));
     straight_vector.push_back(Point(Width/2,0));
 
-    y_path.set_spline(straight_vector);
     y_spline.set_spline(straight_vector);
-
-    w_path.set_spline(straight_vector);
     w_spline.set_spline(straight_vector);
+    trajectory_path.set_spline(straight_vector);
 
 
     //tangents
@@ -85,8 +82,11 @@ int main(int argc, char** argv)
 
     init_trackbars();
 
-    int y_begin_flag = 0;
-    int w_begin_flag = 0;
+    bool y_begin_flag = 0;
+    bool w_begin_flag = 0;
+
+    bool y_line_detect = 0;
+    bool w_line_detect = 0;
 ////////////////////////////////////////////WHILE///////////////////////////////////////////////////
 while(1)
 {
@@ -107,46 +107,67 @@ while(1)
     shm_lane_points.pull_line_data(y_point_vector,w_point_vector,c_point_vector);
     shm_usb_to_stm.pull_usb_data(usb_from_vision);
 
-
-    //begin y condition
-    if(y_point_vector.size()>10)
-    {
-        y_begin_flag = 1;
-    }
-    if(w_point_vector.size()>10)
-    {
-        w_begin_flag = 1;
-    }
-    //shm_lidar_points.pull_lidar_data(l_point_vector);
-
     //preview of received points
     points_preview(w_point_vector,wy_test_mat,CV_RGB(255,255,255));
     points_preview(y_point_vector,wy_test_mat,CV_RGB(255,255,0));
     imshow("Podglad", wy_test_mat);
 
+    y_line_detect = 0;
+    w_line_detect = 0;
 
-    if(y_begin_flag)
+    //begin y condition
+    if(y_point_vector.size()>10)
+    {
+        y_line_detect = 1;
+    }
+    if(w_point_vector.size()>10)
+    {
+        w_line_detect = 1;
+    }
+    //shm_lidar_points.pull_lidar_data(l_point_vector);
+
+
+
+
+    if(y_line_detect)
     {
         points_to_mat(y_mat,y_point_vector);
         rectangle_optimize(y_mat,y_spline);
-        one_line_planner(y_spline,rect_slider[4],y_path);
+        one_line_planner(y_spline,rect_slider[4],trajectory_path);
 
     }
 
-    if(w_begin_flag)
+    if(w_line_detect)
     {
         points_to_mat(w_mat,w_point_vector);
         rectangle_optimize(w_mat,w_spline);
-        one_line_planner(w_spline,rect_slider[4],w_path);
+        one_line_planner(w_spline,rect_slider[4],trajectory_path);
     }
 
 
+    //set path according to detection
+    if(y_line_detect == 1 && w_line_detect == 1)
+    {
+       two_line_planner(y_spline,w_spline,0,trajectory_path);
+    }
+    else if(y_line_detect)
+    {
+        one_line_planner(y_spline,0,trajectory_path);
+    }
+    else if(w_line_detect)
+    {
+        one_line_planner(w_spline,0,trajectory_path);
+    }
+    else
+    {
+
+    }
 
     //calculate tangents
-    y_tangent.calculate(y_path,rect_slider[3]);
-    y_tangent.angle();
+    //y_tangent.calculate(trajectory_path,rect_slider[3]);
+    //y_tangent.angle();
 
-    w_tangent.calculate(w_path,rect_slider[3]);
+    w_tangent.calculate(trajectory_path,rect_slider[3]);
     w_tangent.angle();
 
     #endif
@@ -173,7 +194,7 @@ while(1)
         velocity = left_slider[0];
         velocity = 1500;
         //send data to STM
-        USB_COM.data_pack(velocity,angle,usb_from_vision,&to_send);
+        USB_COM.data_pack(velocity,angle_to_send,usb_from_vision,&to_send);
         USB_COM.send_buf(to_send);
         //USB_COM.read_buf(10);
 
@@ -182,7 +203,6 @@ while(1)
 
         angle_sum = 0;
         average_angle_counter = 0;
-
      }
 
 
@@ -215,10 +235,10 @@ while(1)
 
 
         y_spline.draw(wy_mat,CV_RGB(255,255,0));//draw white right line
-        y_path.draw(wy_mat,CV_RGB(225,20,100));
+        //path.draw(wy_mat,CV_RGB(225,20,100));
 
         w_spline.draw(wy_mat,CV_RGB(255,255,255));//draw white right line
-        w_path.draw(wy_mat,CV_RGB(225,20,100));
+        //w_path.draw(wy_mat,CV_RGB(225,20,100));
 
         y_tangent.draw(wy_mat,CV_RGB(255,255,0));
 
