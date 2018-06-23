@@ -28,27 +28,28 @@ void IDS_PARAMETERS::initialize_camera(HIDS* hCam) {
 
 	INT displayMode = IS_SET_DM_DIB;
 	nRet = is_SetDisplayMode(*hCam, displayMode);
+
+
+    int retInt = is_AllocImageMem(*hCam, 752, 480, 24, &pMem, &memID);
+    if (retInt != IS_SUCCESS){
+        std::cout << "Error in allocating memory" << std::endl;
+    }
 }
 
 
 // Capture a frame from IDS
 void IDS_PARAMETERS::get_frame(HIDS* hCam, int width, int height,cv::Mat& mat) {
-	char* pMem = NULL;
-	int memID = 0;
-    int retInt = is_AllocImageMem(*hCam, width,height, 24, &pMem, &memID);
-    if (retInt != IS_SUCCESS){
-        std::cout << "Error in allocating memory" << std::endl;
-    }
+
 	is_SetImageMem(*hCam, pMem, memID);
 	is_FreezeVideo(*hCam, IS_WAIT);
 
 	VOID* pMem_b;
-    retInt = is_GetImageMem(*hCam, &pMem_b);
+    int retInt = is_GetImageMem(*hCam, &pMem_b);
 	if (retInt != IS_SUCCESS) {
 		std::cout << "Image data could not be read from memory!" << std::endl;
 	}
 	memcpy(mat.ptr(), pMem_b, width*height*3);
-
+//    is_FreeImageMem(*hCam, pMem, memID);
 }
 
 //Updating parameters from trackbars in while loop
@@ -62,10 +63,10 @@ void IDS_PARAMETERS::update_params(HIDS* hCam) {
     FPS = (double)fps_slider;
 	is_SetFrameRate(*hCam, FPS, &NEWFPS);
 
-	is_SetHWGainFactor(*hCam, IS_SET_MASTER_GAIN_FACTOR, Master_GAIN_Factor);
-	is_SetHWGainFactor(*hCam, IS_SET_GREEN_GAIN_FACTOR, Green_GAIN_Factor);
-	is_SetHWGainFactor(*hCam, IS_SET_BLUE_GAIN_FACTOR, Blue_GAIN_Factor);
-	is_SetHWGainFactor(*hCam, IS_SET_RED_GAIN_FACTOR, Red_GAIN_Factor);
+    is_SetHWGainFactor(*hCam, IS_SET_MASTER_GAIN_FACTOR, Master_GAIN_Factor);
+    is_SetHWGainFactor(*hCam, IS_SET_GREEN_GAIN_FACTOR, Green_GAIN_Factor);
+    is_SetHWGainFactor(*hCam, IS_SET_BLUE_GAIN_FACTOR, Blue_GAIN_Factor);
+    is_SetHWGainFactor(*hCam, IS_SET_RED_GAIN_FACTOR, Red_GAIN_Factor);
 	Sharpness = (INT)sharpness_slider;
 	is_EdgeEnhancement(*hCam, IS_EDGE_ENHANCEMENT_CMD_SET, &Sharpness, sizeof(Sharpness));
 	is_Gamma(*hCam, IS_GAMMA_CMD_SET, &Gamma, sizeof(Gamma));
@@ -76,11 +77,11 @@ void IDS_PARAMETERS::setting_auto_params(HIDS* hCam) {
 	double enable = 1;
 	double disable = 0;
 	is_SetAutoParameter(*hCam, IS_SET_ENABLE_AUTO_GAIN, &enable, 0);
-	is_SetAutoParameter(*hCam, IS_SET_ENABLE_AUTO_WHITEBALANCE, &enable, 0);
+    is_SetAutoParameter(*hCam, IS_SET_ENABLE_AUTO_WHITEBALANCE, &disable, 0);
 	is_SetAutoParameter(*hCam, IS_SET_ENABLE_AUTO_FRAMERATE, &disable, 0);
 	is_SetAutoParameter(*hCam, IS_SET_ENABLE_AUTO_SHUTTER, &enable, 0);
 	is_SetAutoParameter(*hCam, IS_SET_ENABLE_AUTO_SENSOR_GAIN, &disable, 0);
-	is_SetAutoParameter(*hCam, IS_SET_ENABLE_AUTO_SENSOR_WHITEBALANCE, &enable, 0);
+    is_SetAutoParameter(*hCam, IS_SET_ENABLE_AUTO_SENSOR_WHITEBALANCE, &disable, 0);
 	is_SetAutoParameter(*hCam, IS_SET_ENABLE_AUTO_SENSOR_SHUTTER, &enable, 0);
 }
 
@@ -96,10 +97,10 @@ void IDS_PARAMETERS::change_params(HIDS *hCam) {
 		std::cout << "Enabling Gain success" << std::endl;
 	}
 	//Get gain factors
-	Master_GAIN_Factor = is_SetHWGainFactor(*hCam, IS_GET_DEFAULT_MASTER_GAIN_FACTOR,100);
-	Red_GAIN_Factor = is_SetHWGainFactor(*hCam, IS_GET_DEFAULT_RED_GAIN_FACTOR, 100);
-	Green_GAIN_Factor = is_SetHWGainFactor(*hCam, IS_GET_DEFAULT_GREEN_GAIN_FACTOR, 100);
-	Blue_GAIN_Factor = is_SetHWGainFactor(*hCam, IS_GET_DEFAULT_BLUE_GAIN_FACTOR, 100);
+    //Master_GAIN_Factor = is_SetHWGainFactor(*hCam, IS_GET_DEFAULT_MASTER_GAIN_FACTOR,100);
+    //Red_GAIN_Factor = is_SetHWGainFactor(*hCam, IS_GET_DEFAULT_RED_GAIN_FACTOR, 100);
+    //Green_GAIN_Factor = is_SetHWGainFactor(*hCam, IS_GET_DEFAULT_GREEN_GAIN_FACTOR, 100);
+    //Blue_GAIN_Factor = is_SetHWGainFactor(*hCam, IS_GET_DEFAULT_BLUE_GAIN_FACTOR, 100);
 
 	nRet = is_EdgeEnhancement(*hCam, IS_EDGE_ENHANCEMENT_CMD_GET_DEFAULT, &Sharpness, sizeof(Sharpness));
 	if (nRet == IS_SUCCESS) {
@@ -117,9 +118,9 @@ void IDS_PARAMETERS::change_params(HIDS *hCam) {
 //Creating in debug mode trackbars
 void IDS_PARAMETERS::create_trackbars(void){
     cvNamedWindow("ids", 1);
-    cv::createTrackbar("Pixel", "ids", &pixelclock_slider, 80, NULL);
+    cv::createTrackbar("Pixel", "ids", &pixelclock_slider, 40, NULL);
     cv::createTrackbar("Exposure", "ids", &exposure_slider, 500, NULL);
-    cv::createTrackbar("FPS", "ids", &fps_slider, 90, NULL);
+    cv::createTrackbar("FPS", "ids", &fps_slider, 87, NULL);
     cv::createTrackbar("Master", "ids", &Master_GAIN_Factor, 300, NULL);
     cv::setTrackbarMin("Master", "ids", 100);
     cv::createTrackbar("Green", "ids", &Green_GAIN_Factor, 300, NULL);

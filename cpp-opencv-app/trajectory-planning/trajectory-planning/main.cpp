@@ -5,7 +5,7 @@ using namespace cv;
 
 //camera params
 const int Height = 480;
-const int Width = 640;
+const int Width = 752;
 
 //rectangle algorithm params
 int number_of_rec_cols = 40;
@@ -166,23 +166,25 @@ while(1)
      angle_sum+=angle;
      average_angle_counter++;
 
-     if(average_angle_counter == 3)
+     if(average_angle_counter == 1)
      {
         uint32_t angle_to_send;
-        angle_to_send = angle_sum/3;
+        angle_to_send = angle_sum/1;
         velocity = left_slider[0];
-        velocity = 500;
+        velocity = 1500;
         //send data to STM
         USB_COM.data_pack(velocity,angle,usb_from_vision,&to_send);
         USB_COM.send_buf(to_send);
+        //USB_COM.read_buf(10);
 
         //read data from STM
-        USB_COM.read_buf(1);
+
 
         angle_sum = 0;
         average_angle_counter = 0;
 
      }
+
 
 
 

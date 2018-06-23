@@ -101,9 +101,7 @@ void USB_STM::send_buf(data_container &to_send)
     to_send_packed[to_send.length+5] = to_send.stop;
 
     //send
-    write(fd, &to_send_packed,22);
-    //unsigned char r = 'r';
-    //write(fd,&r,1);
+    write(fd,&to_send_packed,22);
 
 }
 

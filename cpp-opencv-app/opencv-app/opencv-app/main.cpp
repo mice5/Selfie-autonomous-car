@@ -18,7 +18,7 @@
 #define IDS_MODE
 
 #define CAMERA_INDEX 0
-#define CAM_RES_X 640
+#define CAM_RES_X 752//640
 #define CAM_RES_Y 480
 #define FRAME_TIME 30
 
@@ -69,6 +69,7 @@ int main()
     cv::Mat old_frame(CAM_RES_Y,CAM_RES_X,CV_8UC1);
     cv::Mat display;
     cv::Mat diffrence(CAM_RES_Y,CAM_RES_X,CV_8UC1);
+
 #endif
 
     // Declaration of std::vector variables
@@ -78,7 +79,7 @@ int main()
 #ifdef IDS_MODE
     //cvNamedWindow("frame_ids",1);
     ids_camera.initialize_camera(&hCam);
-    ids_camera.setting_auto_params(&hCam);
+    //ids_camera.setting_auto_params(&hCam);
     ids_camera.change_params(&hCam);
 #ifdef DEBUG_MODE
     ids_camera.create_trackbars();
@@ -144,36 +145,63 @@ int main()
         return 0;
     }
 */
+
 #ifdef STOPLIGHTS_MODE
-    camera >>frame;
-    lightDetector.prepare_first_image(frame,old_frame,lightDetector.roi_number);
-    cv::namedWindow("Light detection", 1);
-    cv::namedWindow("Frame", 1);
-    while(lightDetector.start_light ==false){
-         camera >> frame;
-        //Test ROI on input frame
-        //lightDetector.test_roi(frame,display);
+cv::namedWindow("Frame_ids", 1);
+#ifndef IDS_MODE
+        camera >> frame;
+#endif
+
+#ifdef IDS_MODE
+        cv::Mat ids_image (480, 752, CV_8UC3);
+        ids_camera.get_frame(&hCam,752,480,ids_image);
+        ids_camera.update_params(&hCam);
+        ids_image.copyTo(frame_ids);
+        lightDetector.prepare_first_image(frame_ids,old_frame,lightDetector.roi_number);
+#endif
+
+    while(true)
+    {
+// Get new frame from camera
+#ifndef IDS_MODE
+        camera >> frame;
         lightDetector.find_start(frame,diffrence,old_frame,lightDetector.roi_number);
+#endif
+
+#ifdef IDS_MODE
+        cv::Mat ids_image (480, 752, CV_8UC3);
+        ids_camera.get_frame(&hCam,752,480,ids_image);
+        ids_camera.update_params(&hCam);
+        //other way doesn't work
+        ids_image.copyTo(frame_ids);
+        cv::imshow("Frame_ids", frame_ids);
+        cv::waitKey(20);
+        // lightDetector.test_roi(ids_image,display);
+        lightDetector.find_start(ids_image,diffrence,old_frame,lightDetector.roi_number);
+#endif
+
 #ifdef DEBUG_MODE
         if (lightDetector.start_finding ==true){
-            cv::imshow("Frame",frame);
-            cv::imshow("Light detection",diffrence);
-            //cv::imshow("Light detection", display);
+                cv::imshow("Frame",ids_image);
+                cv::imshow("Light detection",diffrence);
+                //  cv::imshow("Light detection", display);
         }
         if (lightDetector.start_light == true){
-            std::cout<<"START"<<std::endl;
+                std::cout<<"START"<<std::endl;
         }
         else
-            std::cout<<"WAIT"<<std::endl;
+                std::cout<<"WAIT"<<std::endl;
 
-        cv::waitKey(20);
 
 #endif
+
     }
 
 #endif
-
-    // Main loop
+#ifdef IDS_MODE
+//ids_camera.setting_auto_params(&hCam);
+#endif
+// Main loop
     while(true)
     {
 #ifdef DEBUG_MODE
@@ -219,11 +247,11 @@ int main()
 
         // Detect cones
         std::vector<cv::Point> cones_vector;
-        laneDetector.ConeDetection(frame, cone_frame_out, cones_vector);
+        laneDetector.ConeDetection(frame_ids, cone_frame_out, cones_vector);
 
         // Detect lines
         laneDetector.detectLine(yellow_bird_eye_frame, yellow_vector);
-        laneDetector.detectLine(white_bird_eye_frame_tr, white_vector);
+        laneDetector.detectLine(white_bird_eye_frame, white_vector);
         laneDetector.drawPoints(yellow_vector, yellow_vector_frame);
         laneDetector.drawPoints(white_vector, white_vector_frame);
 
@@ -306,7 +334,8 @@ int main()
             clock_gettime(CLOCK_MONOTONIC, &end);
             seconds = (end.tv_sec - start.tv_sec);
             fps  =  1 / (seconds / 1000);
-            std::cout << "FPS: " << fps << std::endl;
+            std::cout <<
+                         "FPS: " << fps << std::endl;
         }
         else
         {

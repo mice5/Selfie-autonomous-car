@@ -20,15 +20,15 @@ static int Acc_value = 50;
 static int Acc_filt = 8;
 static int Acc_filt_slider = 8;
 
-static int R_down_slider = 146, G_down_slider = 82, B_down_slider = 107;
-static int R_up_slider = 176, G_up_slider = 255, B_up_slider = 255;
-static int R_down = 146, G_down = 82, B_down = 107;
-static int R_up = 176, G_up = 255, B_up = 255;
+static int R_down_slider = 89, G_down_slider = 0, B_down_slider = 0;
+static int R_up_slider = 122, G_up_slider = 255, B_up_slider = 255;
+static int R_down = 89, G_down = 0, B_down = 0;
+static int R_up = 112, G_up = 255, B_up = 255;
 
-static int H_down_slider = 236, S_down_slider = 0, V_down_slider = 0;
-static int H_up_slider = 255, S_up_slider = 255, V_up_slider = 255;
-static int H_down = 244, S_down = 0, V_down = 0;
-static int H_up = 255, S_up = 255, V_up = 255;
+static int H_down_slider = 66, S_down_slider = 51, V_down_slider = 0;
+static int H_up_slider = 124, S_up_slider = 105, V_up_slider = 51;
+static int H_down = 66, S_down = 51, V_down = 0;
+static int H_up = 124, S_up = 105, V_up = 51;
 
 static int H_down_slider_white = 48, S_down_slider_white = 104, V_down_slider_white = 94;
 static int H_up_slider_white = 143, S_up_slider_white = 207, V_up_slider_white = 183;
