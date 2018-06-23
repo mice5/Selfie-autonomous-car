@@ -7,13 +7,15 @@
 #include <include/lidar.hpp>
 #include <include/lanedetector.hpp>
 #include <include/stoplights.h>
+#include <include/ids.h>
 
 // Race mode ---> fps boost
 // Debug mode --> display data
 //#define RACE_MODE
-//#define DEBUG_MODE
+#define DEBUG_MODE
 #define NO_USB
 //#define STOPLIGHTS_MODE
+#define IDS_MODE
 
 #define CAMERA_INDEX 0
 #define CAM_RES_X 640
@@ -28,6 +30,8 @@ SharedMemory shm_lidar_data(50001);
 SharedMemory shm_lane_points(50002);
 SharedMemory shm_usb_to_send(50003);
 SharedMemory shm_watchdog(50004);
+IDS_PARAMETERS ids_camera;
+HIDS hCam = 1;
 
 // Variables for communication between threads
 bool close_app = false;
@@ -49,6 +53,7 @@ int main()
 
     // Declaration of cv::MAT variables
     cv::Mat frame(CAM_RES_Y, CAM_RES_X, CV_8UC4);
+    cv::Mat frame_ids(752,480,CV_8UC3);
     cv::Mat yellow_bird_eye_frame(CAM_RES_Y, CAM_RES_X, CV_8UC3);
     cv::Mat white_bird_eye_frame(CAM_RES_Y, CAM_RES_X, CV_8UC3);
     cv::Mat yellow_bird_eye_frame_tr(CAM_RES_Y, CAM_RES_X, CV_8UC3);
@@ -70,6 +75,17 @@ int main()
     std::vector<std::vector<cv::Point>> yellow_vector;
     std::vector<std::vector<cv::Point>> white_vector;
 
+#ifdef IDS_MODE
+    //cvNamedWindow("frame_ids",1);
+    ids_camera.initialize_camera(&hCam);
+    ids_camera.setting_auto_params(&hCam);
+    ids_camera.change_params(&hCam);
+#ifdef DEBUG_MODE
+    ids_camera.create_trackbars();
+#endif
+#endif
+
+#ifndef IDS_MODE
     // Camera init
     cv::VideoCapture camera;
     camera.open(CAMERA_INDEX, cv::CAP_V4L2);
@@ -93,6 +109,7 @@ int main()
         camera.set(cv::CAP_PROP_CONVERT_RGB, true);
         std::cout << "RGB: " << camera.get(cv::CAP_PROP_CONVERT_RGB) << std::endl;
     }
+#endif
 
     //Read XML file
     laneDetector.UndistXML(cameraMatrix, distCoeffs);
@@ -169,12 +186,31 @@ int main()
 #endif
 
         // Get new frame from camera
-        camera >> frame;
 
+#ifndef IDS_MODE
+        camera >> frame;
+#endif
+
+#ifdef IDS_MODE
+        cv::Mat ids_image (480, 752, CV_8UC3);
+        ids_camera.get_frame(&hCam,752,480,ids_image);
+        ids_camera.update_params(&hCam);
+        //writes how many fps we have
+        //std::cout << "FPS: "<<ids_camera.NEWFPS<< std::endl;
+
+        //other way doesn't work
+        ids_image.copyTo(frame_ids);
+
+#endif
 
 
         // Process frame
+#ifndef IDS_MODE
         laneDetector.Undist(frame, undist_frame, cameraMatrix, distCoeffs);
+#endif
+#ifdef IDS_MODE
+        laneDetector.Undist(frame_ids, undist_frame, cameraMatrix, distCoeffs);
+#endif
         laneDetector.Hsv(undist_frame, frame_out_yellow, frame_out_white, frame_out_edge_yellow, frame_out_edge_white);
         laneDetector.BirdEye(frame_out_edge_yellow, yellow_bird_eye_frame);
         laneDetector.BirdEye(frame_out_edge_white, white_bird_eye_frame);
@@ -202,7 +238,7 @@ int main()
         // Display info on screen
         //cv::imshow("Camera", frame);
         //cv::imshow("UndsCamera", undist_frame);
-        cv::imshow("0 Frame", frame);
+        cv::imshow("0 Frame", frame_ids);
         cv::imshow("1.1 Yellow Line", frame_out_yellow);
         cv::imshow("1.2 White Line", frame_out_white);
         cv::imshow("2.1 Yellow Edges", frame_out_edge_yellow);
@@ -214,8 +250,8 @@ int main()
         cv::imshow("4.2 White Vector", white_vector_frame);
         cv::imshow("5 Cone Detect", cone_frame_out);
 
-cv::imshow("TEST", test);
-test = cv::Mat::zeros(CAM_RES_Y, CAM_RES_X, CV_8UC3);
+        cv::imshow("TEST", test);
+        test = cv::Mat::zeros(CAM_RES_Y, CAM_RES_X, CV_8UC3);
 
         yellow_vector_frame = cv::Mat::zeros(CAM_RES_Y, CAM_RES_X, CV_8UC3);
         white_vector_frame = cv::Mat::zeros(CAM_RES_Y, CAM_RES_X, CV_8UC3);
@@ -276,14 +312,20 @@ test = cv::Mat::zeros(CAM_RES_Y, CAM_RES_X, CV_8UC3);
         {
             licznik_czas++;
         }
+
 #endif
 
 
     }
 
     close_app = true;
-
+#ifndef IDS_MODE
     camera.release();
+#endif
+
+#ifdef IDS_MODE
+    is_ExitCamera(hCam);
+#endif
 
     shm_lidar_data.close();
     shm_lane_points.close();
