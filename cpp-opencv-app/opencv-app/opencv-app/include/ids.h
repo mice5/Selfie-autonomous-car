@@ -17,12 +17,13 @@ public:
     int pixelclock_slider = 40;
     double Exposure = 10.0;
     int exposure_slider = 100;
-    double FPS = 87, NEWFPS;
-    int fps_slider = 87;
-    int Master_GAIN_Factor=300;
-    int Red_GAIN_Factor=112;
-    int Green_GAIN_Factor=100;
-    int Blue_GAIN_Factor=158;
+    double FPS = 82, NEWFPS;
+    int fps_slider = 82;
+
+    int Master_GAIN_Factor;//=300;
+    int Red_GAIN_Factor;//=112;
+    int Green_GAIN_Factor;//=100;
+    int Blue_GAIN_Factor;//=158;
 	
 	int nRange[3];
     int sharpness_slider=1;

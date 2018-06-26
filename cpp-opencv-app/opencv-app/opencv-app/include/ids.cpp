@@ -34,22 +34,26 @@ void IDS_PARAMETERS::initialize_camera(HIDS* hCam) {
     if (retInt != IS_SUCCESS){
         std::cout << "Error in allocating memory" << std::endl;
     }
+    is_SetImageMem(*hCam, pMem, memID);
 }
 
 
 // Capture a frame from IDS
 void IDS_PARAMETERS::get_frame(HIDS* hCam, int width, int height,cv::Mat& mat) {
 
-	is_SetImageMem(*hCam, pMem, memID);
-	is_FreezeVideo(*hCam, IS_WAIT);
+    //is_SetImageMem(*hCam, pMem, memID);
+    is_FreezeVideo(*hCam, IS_WAIT);
 
-	VOID* pMem_b;
+    VOID* pMem_b;
     int retInt = is_GetImageMem(*hCam, &pMem_b);
-	if (retInt != IS_SUCCESS) {
-		std::cout << "Image data could not be read from memory!" << std::endl;
-	}
-	memcpy(mat.ptr(), pMem_b, width*height*3);
-//    is_FreeImageMem(*hCam, pMem, memID);
+    if (retInt != IS_SUCCESS) {
+        std::cout << "Image data could not be read from memory!" << std::endl;
+    }
+    else
+        ;
+        memcpy(mat.ptr(), pMem_b, width*height*3);
+    //mat.ptr() = pMem_b;
+    //is_FreeImageMem(*hCam, pMem, memID);
 }
 
 //Updating parameters from trackbars in while loop
@@ -77,11 +81,11 @@ void IDS_PARAMETERS::setting_auto_params(HIDS* hCam) {
 	double enable = 1;
 	double disable = 0;
 	is_SetAutoParameter(*hCam, IS_SET_ENABLE_AUTO_GAIN, &enable, 0);
-    is_SetAutoParameter(*hCam, IS_SET_ENABLE_AUTO_WHITEBALANCE, &disable, 0);
-	is_SetAutoParameter(*hCam, IS_SET_ENABLE_AUTO_FRAMERATE, &disable, 0);
+    is_SetAutoParameter(*hCam, IS_SET_ENABLE_AUTO_WHITEBALANCE, &enable, 0);
+    is_SetAutoParameter(*hCam, IS_SET_ENABLE_AUTO_FRAMERATE, &enable, 0);
 	is_SetAutoParameter(*hCam, IS_SET_ENABLE_AUTO_SHUTTER, &enable, 0);
-	is_SetAutoParameter(*hCam, IS_SET_ENABLE_AUTO_SENSOR_GAIN, &disable, 0);
-    is_SetAutoParameter(*hCam, IS_SET_ENABLE_AUTO_SENSOR_WHITEBALANCE, &disable, 0);
+    is_SetAutoParameter(*hCam, IS_SET_ENABLE_AUTO_SENSOR_GAIN, &enable, 0);
+    is_SetAutoParameter(*hCam, IS_SET_ENABLE_AUTO_SENSOR_WHITEBALANCE, &enable, 0);
 	is_SetAutoParameter(*hCam, IS_SET_ENABLE_AUTO_SENSOR_SHUTTER, &enable, 0);
 }
 
@@ -97,10 +101,10 @@ void IDS_PARAMETERS::change_params(HIDS *hCam) {
 		std::cout << "Enabling Gain success" << std::endl;
 	}
 	//Get gain factors
-    //Master_GAIN_Factor = is_SetHWGainFactor(*hCam, IS_GET_DEFAULT_MASTER_GAIN_FACTOR,100);
-    //Red_GAIN_Factor = is_SetHWGainFactor(*hCam, IS_GET_DEFAULT_RED_GAIN_FACTOR, 100);
-    //Green_GAIN_Factor = is_SetHWGainFactor(*hCam, IS_GET_DEFAULT_GREEN_GAIN_FACTOR, 100);
-    //Blue_GAIN_Factor = is_SetHWGainFactor(*hCam, IS_GET_DEFAULT_BLUE_GAIN_FACTOR, 100);
+    Master_GAIN_Factor = is_SetHWGainFactor(*hCam, IS_GET_DEFAULT_MASTER_GAIN_FACTOR,100);
+    Red_GAIN_Factor = is_SetHWGainFactor(*hCam, IS_GET_DEFAULT_RED_GAIN_FACTOR, 100);
+    Green_GAIN_Factor = is_SetHWGainFactor(*hCam, IS_GET_DEFAULT_GREEN_GAIN_FACTOR, 100);
+    Blue_GAIN_Factor = is_SetHWGainFactor(*hCam, IS_GET_DEFAULT_BLUE_GAIN_FACTOR, 100);
 
 	nRet = is_EdgeEnhancement(*hCam, IS_EDGE_ENHANCEMENT_CMD_GET_DEFAULT, &Sharpness, sizeof(Sharpness));
 	if (nRet == IS_SUCCESS) {
