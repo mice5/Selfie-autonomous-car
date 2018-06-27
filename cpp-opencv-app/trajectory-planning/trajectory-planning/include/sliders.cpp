@@ -94,8 +94,8 @@ void points_preview(vector<Point>points,Mat& frame,const Scalar& col){
         Vec3b color;
         Point pom;
         for(int j=0;j<10;j++){
-            pom.y =points[i].y;
-            pom.x=points[i].x;
+            pom.y = points[i].y;
+            pom.x = points[i].x;
 
 
 

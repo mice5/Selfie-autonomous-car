@@ -1,5 +1,4 @@
 #include "main.h"
-#include <ctime>
 
 using namespace std;
 using namespace cv;
@@ -18,6 +17,8 @@ Mat y_mat = Mat::zeros( Height, Width, CV_8UC3 );
 
 Mat wy_test_mat = Mat::zeros(Height, Width, CV_8UC3 );
 Mat wy_mat = Mat::zeros(Height, Width, CV_8UC3 );
+
+Mat lidar_mat = Mat::zeros(600, 1000, CV_8UC3 );
 
 
 
@@ -84,17 +85,11 @@ int main(int argc, char** argv)
 
     init_trackbars();
 
-    bool y_begin_flag = 0;
-    bool w_begin_flag = 0;
-
     bool y_line_detect = 0;
     bool w_line_detect = 0;
 ////////////////////////////////////////////WHILE///////////////////////////////////////////////////
 while(1)
 {
-     clock_t begin = clock();
-
-
     #if defined(TEST_MODE) || defined(DEBUG_MODE)
         number_of_rec_cols = rect_slider[0];
         number_of_rec_raws = rect_slider[1];
@@ -110,13 +105,19 @@ while(1)
     //get new set of points
     shm_lane_points.pull_line_data(y_point_vector,w_point_vector,c_point_vector);
     shm_usb_to_stm.pull_usb_data(usb_from_vision);
+    shm_lidar_points.pull_lidar_data(l_point_vector);
 
     //preview of received points
     points_preview(w_point_vector,wy_test_mat,CV_RGB(255,255,255));
     points_preview(y_point_vector,wy_test_mat,CV_RGB(255,255,0));
     points_preview(c_point_vector,wy_test_mat,CV_RGB(255,0,0));
 
+    //preview of lidar
+    points_preview(l_point_vector,lidar_mat,CV_RGB(255,0,255));
+    rectangle(lidar_mat,Point(490,490),Point(510,510),CV_RGB(255,0,0));
+
     imshow("Podglad", wy_test_mat);
+    imshow("Lidar",lidar_mat);
 
     y_line_detect = 0;
     w_line_detect = 0;
@@ -136,7 +137,7 @@ while(1)
         points_to_mat(w_mat,w_point_vector);
         rectangle_optimize(w_mat,w_spline);
     }
-    //shm_lidar_points.pull_lidar_data(l_point_vector);
+
 
     //set path according to lines
     if(y_line_detect == 1 && w_line_detect == 1)
@@ -181,7 +182,7 @@ while(1)
      angle_sum+=angle;
      average_angle_counter++;
 
-     if(average_angle_counter == 1)
+     if(average_angle_counter == 2)
      {
         uint32_t angle_to_send;
         angle_to_send = angle_sum/1;
@@ -190,7 +191,8 @@ while(1)
         //send data to STM
         USB_COM.data_pack(velocity,angle_to_send,usb_from_vision,&to_send);
         USB_COM.send_buf(to_send);
-        //USB_COM.read_buf(10);
+
+        //USB_COM.read_buf(50);
 
         //read data from STM
 
@@ -248,17 +250,14 @@ while(1)
         w_mat = Mat::zeros(Height,Width,CV_8UC3);
         y_mat = Mat::zeros(Height,Width,CV_8UC3);
         wy_test_mat = Mat::zeros( Height, Width, CV_8UC3 );//zero matrix
+        lidar_mat = Mat::zeros(600,1000, CV_8UC3 );
 
+        if(waitKey(30)>=0)
+            break;
     #endif
+}//end of while(1)
 
-
-    if(waitKey(30) >= 0) break;
-
-    clock_t end = clock();
-    double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
-    //cout<<"czas: "<<elapsed_secs<<endl;
-}
-    //shm_lane_points.close();
+   // shm_lane_points.close();
     return 0;
 
 }
