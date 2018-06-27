@@ -4,6 +4,10 @@
 #include <string>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+#include <include/thread.hpp>
+
+#define CAM_RES_X 752//640
+#define CAM_RES_Y 480
 
 #define PI 3.1415926
 
@@ -14,8 +18,8 @@ public:
     void applyBlur(cv::Mat &input, cv::Mat &output);
     void UndistXML(cv::Mat &cameraMatrix, cv::Mat &distCoeffs);
     void Undist(cv::Mat frame_in, cv::Mat &frame_out, cv::Mat cameraMatrix, cv::Mat distCoeffs);
-    void BirdEye(cv::Mat frame_in, cv::Mat &frame_out);
-    void BirdEye_both(cv::Mat frame_in_white, cv::Mat &frame_out_white, cv::Mat &frame_in_yellow, cv::Mat &frame_out_yellow);
+    void calculate_bird_var(cv::Mat frame_ref);
+    void bird_eye(cv::Mat &input, cv::Mat &output);
     void CreateTrackbars();
     static void on_yellow_H_trackbar(int, void*);
     static void on_white_H_trackbar(int, void*);
@@ -63,23 +67,27 @@ public:
     void ConeDetection_new(cv::Mat frame_in, cv::Mat &frame_out, std::vector<cv::Point> &conePoints);
     std::vector<cv::Point> cones_vector;
 
+    // Birdeye
+    public:
+    int f_i = 400;
+    int dist_i = 390;
+    int alpha_i = 18;
+
 private:
-    //birdeye variables
-    int alpha_;
-    double focalLength;
-    int dist_ = 500;
-    int f_;
+    double f = (double)f_i;
+    double dist = (double)dist_i;
+    double alpha = ((double)alpha_i - 90.)*CV_PI / 180;
 
-    double f, dist;
-    double alpha;
+     cv::Size taille;
+     double w, h;
 
-    cv::Size taille;
-    cv::Mat A1 ;
-    cv::Mat RX ;
-    cv::Mat R;
-    cv::Mat T;
-    cv::Mat A2;
-    cv::Mat K ;
+     cv::Mat A1;
+     cv::Mat A2;
+     cv::Mat RX;
+     cv::Mat R;
+     cv::Mat T;
+     cv::Mat K;
+     cv::Mat transfo;
 
     //hsv variables
     cv::Mat imageHSV, yel_CannyHSV, whi_CannyHSV;

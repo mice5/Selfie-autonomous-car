@@ -58,17 +58,14 @@ void LaneDetector::Undist(cv::Mat frame_in, cv::Mat &frame_out, cv::Mat cameraMa
     cv::undistort(frame_in, frame_out, cameraMatrix, distCoeffs);
 }
 
-void LaneDetector::BirdEye(cv::Mat frame_in, cv::Mat &frame_out)
+void LaneDetector::calculate_bird_var(cv::Mat frame_ref)
 {
-    alpha_ = A_slider;
-    f_ = K_slider;
-    focalLength = (double)f_;
-    alpha = ((double)alpha_ - 90.)*PI / 180;
-    f = (double)f_;
-    dist = (double)dist_;
+    alpha = ((double)alpha_i - 90.)*CV_PI / 180;
+    dist = (double)dist_i;
+    f = (double)f_i;
 
-    taille = frame_in.size();
-	double w = (double)taille.width, h = (double)taille.height;
+    taille = frame_ref.size();
+    w = (double)taille.width, h = (double)taille.height;
 
     A1 = (cv::Mat_<float>(4, 3) <<
         1, 0, -w / 2,
@@ -96,67 +93,18 @@ void LaneDetector::BirdEye(cv::Mat frame_in, cv::Mat &frame_out)
         0, 0, 1, 0
         );
 
-    // K - intrinsic matrix
     K = (cv::Mat_<float>(3, 4) <<
-        focalLength, 0, w / 2, 0,
-        0, focalLength, h / 2, 0,
+        f, 0, w / 2, 0,
+        0, f, h / 2, 0,
         0, 0, 1, 0
         );
 
-    cv::Mat transfo = K * (T * (R * A1));
-
-    cv::warpPerspective(frame_in, frame_out, transfo, taille, cv::INTER_CUBIC | cv::WARP_INVERSE_MAP);
+    transfo = K * (T * (R * A1));
 }
 
-void LaneDetector::BirdEye_both(cv::Mat frame_in_white, cv::Mat &frame_out_white, cv::Mat &frame_in_yellow, cv::Mat &frame_out_yellow)
+void LaneDetector::bird_eye(cv::Mat &input, cv::Mat &output)
 {
-    alpha_ = A_slider;
-    f_ = K_slider;
-    focalLength = (double)f_;
-    alpha = ((double)alpha_ - 90.)*PI / 180;
-    f = (double)f_;
-    dist = (double)dist_;
-
-    taille = frame_in_white.size();
-    double w = (double)taille.width, h = (double)taille.height;
-
-    A1 = (cv::Mat_<float>(4, 3) <<
-        1, 0, -w / 2,
-        0, 1, -h / 2,
-        0, 0, 0,
-        0, 0, 1);
-
-    RX = (cv::Mat_<float>(4, 4) <<
-        1, 0, 0, 0,
-        0, cos(alpha), -sin(alpha), 0,
-        0, sin(alpha), cos(alpha), 0,
-        0, 0, 0, 1);
-
-    R = RX;
-
-    T = (cv::Mat_<float>(4, 4) <<
-        1, 0, 0, 0,
-        0, 1, 0, 0,
-        0, 0, 1, dist,
-        0, 0, 0, 1);
-
-    A2 = (cv::Mat_<float>(3, 4) <<
-        f, 0, w / 2, 0,
-        0, f, h / 2, 0,
-        0, 0, 1, 0
-        );
-
-    // K - intrinsic matrix
-    K = (cv::Mat_<float>(3, 4) <<
-        focalLength, 0, w / 2, 0,
-        0, focalLength, h / 2, 0,
-        0, 0, 1, 0
-        );
-
-    cv::Mat transfo = K * (T * (R * A1));
-
-    cv::warpPerspective(frame_in_white, frame_out_white, transfo, taille, cv::INTER_CUBIC | cv::WARP_INVERSE_MAP);
-    cv::warpPerspective(frame_in_yellow, frame_out_yellow, transfo, taille, cv::INTER_CUBIC | cv::WARP_INVERSE_MAP);
+    cv::warpPerspective(input, output, transfo, taille, cv::INTER_CUBIC | cv::WARP_INVERSE_MAP);
 }
 
 void LaneDetector::CreateTrackbars()
@@ -168,11 +116,6 @@ void LaneDetector::CreateTrackbars()
     cv::namedWindow("3.3 Line Accuracy",1);
     cv::namedWindow("5 Cone Detect", 1);
 
-    cv::createTrackbar("A", "3.1 Yellow Bird Eye", &A_value, Accuracy_max, NULL);
-    cv::createTrackbar("K", "3.1 Yellow Bird Eye", &K_value, F_max, NULL);
-    cv::createTrackbar("Acc", "3.1 Yellow Bird Eye", &Acc_value, 255, NULL);
-    cv::createTrackbar("A", "3.2 White Bird Eye", &A_value, Accuracy_max, NULL);
-    cv::createTrackbar("K", "3.2 White Bird Eye", &K_value, F_max, NULL);
     cv::createTrackbar("Acc", "3.3 Line Accuracy", &Acc_value, 255, NULL);
     cv::createTrackbar("Acc_filt", "3.3 Line Accuracy", &Acc_filt, 20, NULL);
     cv::createTrackbar("Rdown", "5 Cone Detect", &R_down, 255, NULL);

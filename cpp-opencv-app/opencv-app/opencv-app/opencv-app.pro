@@ -11,7 +11,8 @@ HEADERS += \
     include/lidar.hpp \
     include/stoplights.h \
     include/ueye.h \
-    include/ids.h
+    include/ids.h \
+    include/thread.hpp
 
 SOURCES += main.cpp \
     include/lanedetector.cpp \
@@ -19,7 +20,8 @@ SOURCES += main.cpp \
     include/lidar.cpp \
     include/stoplights.cpp \
     include/ids.cpp \
-    include/ids_main.cpp
+    include/ids_main.cpp \
+    include/thread.cpp
 
 INCLUDEPATH += /usr/local/include/opencv
 LIBS += -L/usr/local/lib -lopencv_stitching -lopencv_superres -lopencv_videostab -lopencv_xfeatures2d -lopencv_shape -lopencv_img_hash -lopencv_dpm -lopencv_optflow -lopencv_rgbd -lopencv_xphoto -lopencv_ximgproc -lopencv_line_descriptor -lopencv_fuzzy -lopencv_saliency -lopencv_stereo -lopencv_reg -lopencv_bgsegm -lopencv_freetype -lopencv_structured_light -lopencv_phase_unwrapping -lopencv_bioinspired -lopencv_aruco -lopencv_ccalib -lopencv_calib3d -lopencv_face -lopencv_tracking -lopencv_datasets -lopencv_text -lopencv_features2d -lopencv_highgui -lopencv_videoio -lopencv_dnn -lopencv_video -lopencv_plot -lopencv_photo -lopencv_ml -lopencv_xobjdetect -lopencv_imgcodecs -lopencv_objdetect -lopencv_imgproc -lopencv_surface_matching -lopencv_flann -lopencv_core

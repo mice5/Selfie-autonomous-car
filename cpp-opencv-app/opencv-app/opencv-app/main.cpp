@@ -24,6 +24,8 @@
 #define CAM_RES_Y 480
 #define FRAME_TIME 10
 
+
+
 // Handlers for custom classes
 LaneDetector laneDetector;
 StopLightDetector lightDetector;
@@ -34,6 +36,12 @@ SharedMemory shm_usb_to_send(50003);
 SharedMemory shm_watchdog(50004);
 IDS_PARAMETERS ids_camera;
 HIDS hCam = 1;
+
+cv::Mat frame_ref(CAM_RES_Y, CAM_RES_X, CV_8UC1);
+void update_trackbar(int, void*)
+{
+    laneDetector.calculate_bird_var(frame_ref);
+}
 
 // Variables for communication between threads
 bool close_app = false;
@@ -131,7 +139,7 @@ int main()
 
 #ifdef IDS_MODE
     cvNamedWindow("frame_ids",1);
-    ids_camera.initialize_camera(&hCam);
+    ids_camera.initialize_camera(&hCam, frame_ids);
     ids_camera.setting_auto_params(&hCam);
     ids_camera.change_params(&hCam);
 #ifdef DEBUG_MODE
@@ -286,6 +294,16 @@ ids_camera.setting_auto_params(&hCam);
     }
 #endif
 
+    cv::namedWindow("3.1 Yellow Bird Eye", 1);
+    cv::namedWindow("3.2 White Bird Eye", 1);
+
+    cv::createTrackbar("f", "3.1 Yellow Bird Eye", &laneDetector.f_i, 1000, update_trackbar);
+    cv::createTrackbar("dst", "3.1 Yellow Bird Eye", &laneDetector.dist_i, 1000, update_trackbar);
+    cv::createTrackbar("alpha", "3.1 Yellow Bird Eye", &laneDetector.alpha_i, 100, update_trackbar);
+
+    // Bird Eye first calculation
+    laneDetector.calculate_bird_var(frame_ref);
+
     while(true)
     {
 //#ifdef DEBUG_MODE
@@ -326,7 +344,8 @@ ids_camera.setting_auto_params(&hCam);
         laneDetector.Hsv_both(undist_frame, frame_out_yellow, frame_out_white, frame_out_edge_yellow, frame_out_edge_white);
         //laneDetector.BirdEye(frame_out_edge_yellow, yellow_bird_eye_frame);
         //laneDetector.BirdEye(frame_out_edge_white, white_bird_eye_frame);
-        laneDetector.BirdEye_both(frame_out_edge_white, white_bird_eye_frame,frame_out_edge_yellow, yellow_bird_eye_frame);
+        laneDetector.bird_eye(frame_out_edge_white, white_bird_eye_frame);
+        laneDetector.bird_eye(frame_out_edge_yellow, yellow_bird_eye_frame);
         //laneDetector.colorTransform(yellow_bird_eye_frame, yellow_bird_eye_frame_tr);
         //laneDetector.colorTransform(white_bird_eye_frame, white_bird_eye_frame_tr);
 
@@ -357,7 +376,7 @@ ids_camera.setting_auto_params(&hCam);
         //cv::imshow("Camera", frame);
         //cv::imshow("UndsCamera", undist_frame);
 #ifdef IDS_MODE
-        cv::imshow("Frame", ids_image);
+        cv::imshow("0 Frame", ids_image);
 #endif
 #ifndef IDS_MODE
         cv::imshow("0 Frame",frame);
