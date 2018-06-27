@@ -5,7 +5,7 @@ using namespace std;
 using namespace cv;
 
 
-int param = 3;
+int param = 2;
 bool rectangle_optimize(Mat& point_mat,spline_t& spl)
 {
     vector<Point> spline_points;
@@ -213,9 +213,9 @@ void two_line_planner(spline_t y_line, spline_t w_line, int offset, spline_t& pa
     {
     vector<Point>pom;
     pom.push_back(middle);
-    pom.push_back(Point(w_line.spline(Height/2) - y_line.spline(Height/2) + offset, Height/2));
-    pom.push_back(Point(w_line.spline(Height/3) - y_line.spline(Height/3) + offset, Height/3));
-    pom.push_back(Point(w_line.spline(1) - y_line.spline(1) + offset, 1));
+    pom.push_back(Point((w_line.spline(Height/2) + y_line.spline(Height/2))/2 + offset, Height/2));
+    pom.push_back(Point((w_line.spline(Height/3) + y_line.spline(Height/3))/2 + offset, Height/3));
+    pom.push_back(Point((w_line.spline(1) + y_line.spline(1))/2 + offset, 1));
     path_line.set_spline(pom);
 
 

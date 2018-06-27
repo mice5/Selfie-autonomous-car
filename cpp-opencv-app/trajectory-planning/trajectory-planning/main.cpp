@@ -1,4 +1,5 @@
 #include "main.h"
+#include <ctime>
 
 using namespace std;
 using namespace cv;
@@ -13,7 +14,7 @@ int number_of_rec_raws = 10; //liczba pasów detekcji //slidery ustawiaja
 
 //main MAT
 Mat w_mat = Mat::zeros( Height, Width, CV_8UC3 ); //blank matri
-Mat y_mat = Mat::zeros(Height, Width, CV_8UC3 );
+Mat y_mat = Mat::zeros( Height, Width, CV_8UC3 );
 
 Mat wy_test_mat = Mat::zeros(Height, Width, CV_8UC3 );
 Mat wy_mat = Mat::zeros(Height, Width, CV_8UC3 );
@@ -53,6 +54,7 @@ int main(int argc, char** argv)
     //tangents
     tangent y_tangent;
     tangent w_tangent;
+    tangent trajectory_tangent;
 
 
     //sharedmemory
@@ -90,6 +92,8 @@ int main(int argc, char** argv)
 ////////////////////////////////////////////WHILE///////////////////////////////////////////////////
 while(1)
 {
+     clock_t begin = clock();
+
 
     #if defined(TEST_MODE) || defined(DEBUG_MODE)
         number_of_rec_cols = rect_slider[0];
@@ -110,6 +114,8 @@ while(1)
     //preview of received points
     points_preview(w_point_vector,wy_test_mat,CV_RGB(255,255,255));
     points_preview(y_point_vector,wy_test_mat,CV_RGB(255,255,0));
+    points_preview(c_point_vector,wy_test_mat,CV_RGB(255,0,0));
+
     imshow("Podglad", wy_test_mat);
 
     y_line_detect = 0;
@@ -119,56 +125,44 @@ while(1)
     if(y_point_vector.size()>10)
     {
         y_line_detect = 1;
+
+        points_to_mat(y_mat,y_point_vector);
+        rectangle_optimize(y_mat,y_spline);
     }
     if(w_point_vector.size()>10)
     {
         w_line_detect = 1;
+
+        points_to_mat(w_mat,w_point_vector);
+        rectangle_optimize(w_mat,w_spline);
     }
     //shm_lidar_points.pull_lidar_data(l_point_vector);
 
-
-
-
-    if(y_line_detect)
-    {
-        points_to_mat(y_mat,y_point_vector);
-        rectangle_optimize(y_mat,y_spline);
-        one_line_planner(y_spline,rect_slider[4],trajectory_path);
-
-    }
-
-    if(w_line_detect)
-    {
-        points_to_mat(w_mat,w_point_vector);
-        rectangle_optimize(w_mat,w_spline);
-        one_line_planner(w_spline,rect_slider[4],trajectory_path);
-    }
-
-
-    //set path according to detection
+    //set path according to lines
     if(y_line_detect == 1 && w_line_detect == 1)
     {
        two_line_planner(y_spline,w_spline,0,trajectory_path);
+       trajectory_tangent.calculate(trajectory_path,rect_slider[3]);
+       trajectory_tangent.angle();
     }
     else if(y_line_detect)
     {
         one_line_planner(y_spline,0,trajectory_path);
+        trajectory_tangent.calculate(trajectory_path,rect_slider[3]);
+        trajectory_tangent.angle();
     }
     else if(w_line_detect)
     {
         one_line_planner(w_spline,0,trajectory_path);
+        trajectory_tangent.calculate(trajectory_path,rect_slider[3]);
+        trajectory_tangent.angle();
     }
     else
     {
 
     }
 
-    //calculate tangents
-    //y_tangent.calculate(trajectory_path,rect_slider[3]);
-    //y_tangent.angle();
 
-    w_tangent.calculate(trajectory_path,rect_slider[3]);
-    w_tangent.angle();
 
     #endif
 
@@ -183,7 +177,7 @@ while(1)
 ///////////////////////////////////////////////////////////////////////////////////////////
      #if defined(RACE_MODE) || defined(DEBUG_MODE)
 
-     angle = (y_tangent.angle_deg+30)*10;
+     angle = (trajectory_tangent.angle_deg+30)*10;
      angle_sum+=angle;
      average_angle_counter++;
 
@@ -192,7 +186,7 @@ while(1)
         uint32_t angle_to_send;
         angle_to_send = angle_sum/1;
         velocity = left_slider[0];
-        velocity = 1500;
+        velocity = 1000;
         //send data to STM
         USB_COM.data_pack(velocity,angle_to_send,usb_from_vision,&to_send);
         USB_COM.send_buf(to_send);
@@ -230,35 +224,39 @@ while(1)
     #endif
 
     #ifdef DEBUG_MODE
-        //test display
-        add(y_mat,w_mat,wy_mat);
+
+        add(y_mat,w_mat,wy_mat); // to see rectangles
+
+        //draw detected spline
+        if(y_line_detect)
+        y_spline.draw(wy_mat,CV_RGB(255,255,0));
+        if(w_line_detect)
+        w_spline.draw(wy_mat,CV_RGB(255,255,255));
+
+        trajectory_path.draw(wy_mat,CV_RGB(0,255,0));
+        trajectory_tangent.draw(wy_mat,CV_RGB(100,100,100));
 
 
-        y_spline.draw(wy_mat,CV_RGB(255,255,0));//draw white right line
-        //path.draw(wy_mat,CV_RGB(225,20,100));
-
-        w_spline.draw(wy_mat,CV_RGB(255,255,255));//draw white right line
-        //w_path.draw(wy_mat,CV_RGB(225,20,100));
-
-        y_tangent.draw(wy_mat,CV_RGB(255,255,0));
-
-        label  = "traj_ang: "+ std::to_string(y_tangent.angle_deg);
-        putText(y_mat, label, Point(450, 40), FONT_HERSHEY_SIMPLEX, 0.5, CV_RGB(0,255,0), 1.0);
+        label  = "traj_ang: "+ std::to_string(trajectory_tangent.angle_deg);
+        putText(wy_mat, label, Point(450, 40), FONT_HERSHEY_SIMPLEX, 0.5, CV_RGB(0,255,0), 1.0);
 
         //show white line mat
         imshow("tryb DEBUG",wy_mat);
 
         //clean matrixes
-        wy_mat = Mat::zeros(480,640,CV_8UC3);
-        w_mat = Mat::zeros(480,640,CV_8UC3);
-        y_mat = Mat::zeros(480,640,CV_8UC3);
-        wy_test_mat = Mat::zeros( 480, 640, CV_8UC3 );//zero matrix
+        wy_mat = Mat::zeros(Height,Width,CV_8UC3);
+        w_mat = Mat::zeros(Height,Width,CV_8UC3);
+        y_mat = Mat::zeros(Height,Width,CV_8UC3);
+        wy_test_mat = Mat::zeros( Height, Width, CV_8UC3 );//zero matrix
 
     #endif
 
 
     if(waitKey(30) >= 0) break;
 
+    clock_t end = clock();
+    double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
+    //cout<<"czas: "<<elapsed_secs<<endl;
 }
     //shm_lane_points.close();
     return 0;
