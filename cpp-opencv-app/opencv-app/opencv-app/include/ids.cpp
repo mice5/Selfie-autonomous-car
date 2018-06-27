@@ -1,7 +1,7 @@
 #include "ids.h"
 
 //Function that initialize uEye camera
-void IDS_PARAMETERS::initialize_camera(HIDS* hCam) {
+void IDS_PARAMETERS::initialize_camera(HIDS* hCam, cv::Mat& mat) {
 	INT nRet = is_InitCamera(hCam, NULL);
 	if (nRet == IS_SUCCESS) {
 		std::cout << "Camera initialized!" << std::endl;
@@ -29,19 +29,26 @@ void IDS_PARAMETERS::initialize_camera(HIDS* hCam) {
 	INT displayMode = IS_SET_DM_DIB;
 	nRet = is_SetDisplayMode(*hCam, displayMode);
 
-
+//    int retInt = is_SetAllocatedImageMem(*hCam, 752, 480, 24, (char*)mat.ptr(), &memID);
     int retInt = is_AllocImageMem(*hCam, 752, 480, 24, &pMem, &memID);
     if (retInt != IS_SUCCESS){
         std::cout << "Error in allocating memory" << std::endl;
     }
-    is_SetImageMem(*hCam, pMem, memID);
+    if (is_SetImageMem(*hCam, pMem, memID) == IS_SUCCESS)
+        {
+//        is_CaptureVideo(*hCam, IS_WAIT);
+        }
+    else
+    {
+        std::cout << "Error in activating memory" << std::endl;
+    }
 }
 
 
 // Capture a frame from IDS
 void IDS_PARAMETERS::get_frame(HIDS* hCam, int width, int height,cv::Mat& mat) {
 
-    //is_SetImageMem(*hCam, pMem, memID);
+//    is_SetImageMem(*hCam, pMem, memID);
     is_FreezeVideo(*hCam, IS_WAIT);
 
     VOID* pMem_b;
@@ -49,11 +56,13 @@ void IDS_PARAMETERS::get_frame(HIDS* hCam, int width, int height,cv::Mat& mat) {
     if (retInt != IS_SUCCESS) {
         std::cout << "Image data could not be read from memory!" << std::endl;
     }
-    else
-        ;
-        memcpy(mat.ptr(), pMem_b, width*height*3);
+//    is_LockSeqBuf(*hCam,memID, (char*)pMem_b);
+    is_CopyImageMem(*hCam, (char*)pMem_b, memID, (char*)mat.ptr());
+//    is_UnlockSeqBuf(*hCam,memID, (char*)pMem_b);
+//    memcpy(mat.ptr(), pMem_b, width*height*3);
+
     //mat.ptr() = pMem_b;
-    //is_FreeImageMem(*hCam, pMem, memID);
+//    is_FreeImageMem(*hCam, pMem, memID);
 }
 
 //Updating parameters from trackbars in while loop

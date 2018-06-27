@@ -10,15 +10,15 @@ int main_not(void){
     unsigned int licznik_czas = 0;
     float seconds = 0;
     float fps = 0;
-    ids_c.initialize_camera(&hCa);
+    cv::Mat ids_image(480,752,CV_8UC3);
+    cv::Mat frame_ids(480,752,CV_8UC3);
+    ids_c.initialize_camera(&hCa, ids_image);
     ids_c.setting_auto_params(&hCa);
     ids_c.change_params(&hCa);
 
     ids_c.create_trackbars();
     cvNamedWindow("frame_ids",1);
     cvNamedWindow("fram",1);
-    cv::Mat ids_image(480,752,CV_8UC3);
-    cv::Mat frame_ids(480,752,CV_8UC3);
 
     while(true)
     {
@@ -31,7 +31,7 @@ int main_not(void){
         ids_c.get_frame(&hCa,480,752,ids_image);
 //        ids_c.update_params(&hCa);
 
-//        cv::imshow("fram",ids_image);
+        cv::imshow("fram",ids_image);
 
         if(licznik_czas > 500)
         {
@@ -45,7 +45,7 @@ int main_not(void){
         {
             licznik_czas++;
         }
-//        cv::waitKey(1);
+        cv::waitKey(1);
 
 
 

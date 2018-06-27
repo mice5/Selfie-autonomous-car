@@ -7,6 +7,7 @@
 #include "opencv2/opencv.hpp"
 #include "ueye.h"
 
+
 #define IDS_WIDTH 480
 #define IDS_HEIGHT 752
 
@@ -35,7 +36,7 @@ public:
     int memID = 0;
 
     void get_frame(HIDS* hCam, int width, int height,cv::Mat& mat);
-	void initialize_camera(HIDS* hCam);
+    void initialize_camera(HIDS* hCam, cv::Mat& mat);
 	void change_params(HIDS* hCam);
 	void setting_auto_params(HIDS* hCam);
 	void update_params(HIDS *hCam);
