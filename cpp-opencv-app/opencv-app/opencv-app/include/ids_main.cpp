@@ -27,11 +27,12 @@ int main_not(void){
         {
             clock_gettime(CLOCK_MONOTONIC, &start);
         }
-
-        ids_c.get_frame(&hCa,480,752,ids_image);
+        cv::namedWindow( "fram", WINDOW_AUTOSIZE );
+        HWND* window = cv::cvGetWindowHandle("fram");
+        ids_c.get_frame(&hCa,480,752,ids_image, window);
 //        ids_c.update_params(&hCa);
 
-        cv::imshow("fram",ids_image);
+//        cv::imshow("fram",ids_image);
 
         if(licznik_czas > 500)
         {
@@ -39,7 +40,11 @@ int main_not(void){
             clock_gettime(CLOCK_MONOTONIC, &end);
             seconds = (end.tv_sec - start.tv_sec);
             fps  =  1 / (seconds / 500);
-            std::cout <<"FPS: " << fps << std::endl;
+//            std::cout <<"FPS: " << fps << std::endl;
+            float fps;
+			if (is_GetFramesPerSecond(hCa, &fps) == IS_SUCCESS)
+				std::cout << "FPS: " << fps << std:: endl;
+			std::cout << "BW: " << is_GetUsedBandwidth (hCa) << std:: endl;
         }
         else
         {

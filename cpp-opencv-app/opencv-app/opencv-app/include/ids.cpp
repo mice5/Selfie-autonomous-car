@@ -1,5 +1,7 @@
 #include "ids.h"
 
+HANDLE hEvent;
+//HWND m_hWndDisplay;
 //Function that initialize uEye camera
 void IDS_PARAMETERS::initialize_camera(HIDS* hCam, cv::Mat& mat) {
 	INT nRet = is_InitCamera(hCam, NULL);
@@ -29,14 +31,21 @@ void IDS_PARAMETERS::initialize_camera(HIDS* hCam, cv::Mat& mat) {
 	INT displayMode = IS_SET_DM_DIB;
 	nRet = is_SetDisplayMode(*hCam, displayMode);
 
-//    int retInt = is_SetAllocatedImageMem(*hCam, 752, 480, 24, (char*)mat.ptr(), &memID);
-    int retInt = is_AllocImageMem(*hCam, 752, 480, 24, &pMem, &memID);
+    int retInt = is_SetAllocatedImageMem(*hCam, 752, 480, 24, (char*)mat.ptr(), &memID);
+//    int retInt = is_AllocImageMem(*hCam, 752, 480, 24, &pMem, &memID);
     if (retInt != IS_SUCCESS){
         std::cout << "Error in allocating memory" << std::endl;
     }
+
+    hEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
+
     if (is_SetImageMem(*hCam, pMem, memID) == IS_SUCCESS)
         {
-//        is_CaptureVideo(*hCam, IS_WAIT);
+
+    	is_InitEvent(*hCam, hEvent, IS_SET_EVENT_FRAME);
+    	is_EnableEvent(*hCam, IS_SET_EVENT_FRAME);
+        is_CaptureVideo(*hCam, IS_WAIT);
+
         }
     else
     {
@@ -46,18 +55,33 @@ void IDS_PARAMETERS::initialize_camera(HIDS* hCam, cv::Mat& mat) {
 
 
 // Capture a frame from IDS
-void IDS_PARAMETERS::get_frame(HIDS* hCam, int width, int height,cv::Mat& mat) {
+void IDS_PARAMETERS::get_frame(HIDS* hCam, int width, int height,cv::Mat& mat, HWND* m_hWndDisplay) {
+	DWORD dwRet = WaitForSingleObject(hEvent, 1000);
 
+	if (dwRet == WAIT_TIMEOUT)
+
+	{
+
+	  /* wait timed out */
+
+	}
+
+	else if (dwRet == WAIT_OBJECT_0)
+	{
+		is_RenderBitmap( *hCam, memID, m_hWndDisplay, IS_RENDER_FIT_TO_WINDOW  );
+	  /* event signalled */
+
+	}
 //    is_SetImageMem(*hCam, pMem, memID);
-    is_FreezeVideo(*hCam, IS_WAIT);
+//    is_FreezeVideo(*hCam, IS_WAIT);
 
-    VOID* pMem_b;
-    int retInt = is_GetImageMem(*hCam, &pMem_b);
-    if (retInt != IS_SUCCESS) {
-        std::cout << "Image data could not be read from memory!" << std::endl;
-    }
+//    VOID* pMem_b;
+//    int retInt = is_GetImageMem(*hCam, &pMem_b);
+//    if (retInt != IS_SUCCESS) {
+//        std::cout << "Image data could not be read from memory!" << std::endl;
+//    }
 //    is_LockSeqBuf(*hCam,memID, (char*)pMem_b);
-    is_CopyImageMem(*hCam, (char*)pMem_b, memID, (char*)mat.ptr());
+//    is_CopyImageMem(*hCam, (char*)pMem_b, memID, (char*)mat.ptr());
 //    is_UnlockSeqBuf(*hCam,memID, (char*)pMem_b);
 //    memcpy(mat.ptr(), pMem_b, width*height*3);
 

@@ -35,7 +35,7 @@ public:
     char* pMem = NULL;
     int memID = 0;
 
-    void get_frame(HIDS* hCam, int width, int height,cv::Mat& mat);
+    void get_frame(HIDS* hCam, int width, int height,cv::Mat& mat, HWND* m_hWndDisplay);
     void initialize_camera(HIDS* hCam, cv::Mat& mat);
 	void change_params(HIDS* hCam);
 	void setting_auto_params(HIDS* hCam);
