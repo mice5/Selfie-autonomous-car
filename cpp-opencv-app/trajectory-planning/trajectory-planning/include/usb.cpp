@@ -108,28 +108,41 @@ void USB_STM::send_buf(data_container &to_send)
 }
 
 
-void USB_STM::read_buf(int buf_size)
+void USB_STM::read_buf(int buf_size,float* velocity, uint16_t *tf_mini)
 
 {
     unsigned char buf[buf_size];
-    std::cout << "Len: " << read(fd, &buf, buf_size) << std::endl;
+    int read_state = read(fd, &buf, buf_size) ;
 
-    for(int i = 0; i < buf_size; i++)
+
+    if(read_state>0)
+    {    std::cout << "Len: " << read_state<< std::endl;
+        //for(int i = 0; i < buf_size; i++)
+        //{
+            //std::cout << (int)buf[i]<<"\t";
+
+        //}
+    //4 byte --> float union
+    union
     {
-        std::cout << (int)buf[i]<<"\t";
+        float f;
+        unsigned char b[4];
+    }u;
 
-    }
-   // union
-   // {
-    //    float f;
-     //   unsigned char b[4];
-   // }u;
-    //u.b[0]=buf[0];
-     //u.b[1]=buf[1];
-      //u.b[2]=buf[2];
-      // u.b[3]=buf[3];
-      // std::cout<<"nasz float to "<<u.f<<std::endl;
+     u.b[0]=buf[3];
+     u.b[1]=buf[4];
+     u.b[2]=buf[5];
+     u.b[3]=buf[6];
+
+     //car velocity
+     *velocity = u.f;
+
+     //tf mini distance
+     *tf_mini = buf[7];
+     *tf_mini = (*tf_mini<<8) | buf[8];
+
     std::cout << std::endl;
+    }
 }
 
 void USB_STM::data_pack(uint32_t velo,uint32_t ang,std::vector<uint32_t>flags,data_container *container)
