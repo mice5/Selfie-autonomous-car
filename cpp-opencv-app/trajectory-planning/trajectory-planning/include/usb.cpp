@@ -3,7 +3,7 @@
 USB_STM::USB_STM()
 {
 
-    std::string name = "/dev/ttyACM1";
+    std::string name = "/dev/ttyACM0";
     strcpy(&portname[0], name.c_str());
 }
 
@@ -11,7 +11,7 @@ int USB_STM::init(int speed)
 {
     // Try openning ports from ttyACM0 to ttyACM9
 
-    for(int i = 49; i < 58; i++)
+    for(int i = 48; i < 58; i++)
     {
         portname[11] = i;
         fd = open(&portname[0], O_RDWR | O_NOCTTY | O_SYNC);
@@ -55,13 +55,13 @@ int USB_STM::init(int speed)
     fcntl(fd, F_SETFL, FNDELAY);
 
     // non-canonical mode
-    //tty.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON);
-    //tty.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
-    //tty.c_oflag &= ~OPOST;
+    tty.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON);
+    tty.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
+    tty.c_oflag &= ~OPOST;
 
     // fetch bytes asap
-    //tty.c_cc[VMIN] = 1;
-    //tty.c_cc[VTIME] = 1;
+    tty.c_cc[VMIN] = 1;
+    tty.c_cc[VTIME] = 1;
 
     // Set new parameters of transmission
     if (tcsetattr(fd, TCSANOW, &tty) != 0)
@@ -100,10 +100,10 @@ void USB_STM::send_buf(data_container &to_send)
     to_send_packed[to_send.length+4] = to_send.code;
     to_send_packed[to_send.length+5] = to_send.stop;
 
-    unsigned char test = 'F';
+    //unsigned char test = 'F';
     //send
-   write(fd,&test,1);
-    //write(fd,&to_send,22);
+   //write(fd,&test,1);
+    write(fd,&to_send_packed,22);
 
 }
 

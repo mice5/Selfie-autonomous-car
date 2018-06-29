@@ -187,22 +187,17 @@ while(1)
         uint32_t angle_to_send;
         angle_to_send = angle_sum/1;
         velocity = left_slider[0];
-        velocity = 1000;
+        //velocity = 1000;
         //send data to STM
         USB_COM.data_pack(velocity,angle_to_send,usb_from_vision,&to_send);
         USB_COM.send_buf(to_send);
 
-        //USB_COM.read_buf(50);
+        USB_COM.read_buf(70);
 
         //read data from STM
-
-
         angle_sum = 0;
         average_angle_counter = 0;
      }
-
-
-
 
     #endif
 
