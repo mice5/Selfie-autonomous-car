@@ -3,7 +3,7 @@
 USB_STM::USB_STM()
 {
 
-    std::string name = "/dev/ttyACM1";
+    std::string name = "/dev/ttyACM0";
     strcpy(&portname[0], name.c_str());
 }
 
@@ -11,7 +11,7 @@ int USB_STM::init(int speed)
 {
     // Try openning ports from ttyACM0 to ttyACM9
 
-    for(int i = 49; i < 58; i++)
+    for(int i = 48; i < 58; i++)
     {
         portname[11] = i;
         fd = open(&portname[0], O_RDWR | O_NOCTTY | O_SYNC);
@@ -55,13 +55,13 @@ int USB_STM::init(int speed)
     fcntl(fd, F_SETFL, FNDELAY);
 
     // non-canonical mode
-    //tty.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON);
-    //tty.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
-    //tty.c_oflag &= ~OPOST;
+    tty.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON);
+    tty.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
+    tty.c_oflag &= ~OPOST;
 
     // fetch bytes asap
-    //tty.c_cc[VMIN] = 1;
-    //tty.c_cc[VTIME] = 1;
+    tty.c_cc[VMIN] = 1;
+    tty.c_cc[VTIME] = 1;
 
     // Set new parameters of transmission
     if (tcsetattr(fd, TCSANOW, &tty) != 0)
@@ -100,36 +100,49 @@ void USB_STM::send_buf(data_container &to_send)
     to_send_packed[to_send.length+4] = to_send.code;
     to_send_packed[to_send.length+5] = to_send.stop;
 
-    unsigned char test = 'F';
+    //unsigned char test = 'F';
     //send
-   write(fd,&test,1);
-    //write(fd,&to_send,22);
+   //write(fd,&test,1);
+    write(fd,&to_send_packed,22);
 
 }
 
 
-void USB_STM::read_buf(int buf_size)
+void USB_STM::read_buf(int buf_size,float* velocity, uint16_t *tf_mini)
 
 {
     unsigned char buf[buf_size];
-    std::cout << "Len: " << read(fd, &buf, buf_size) << std::endl;
+    int read_state = read(fd, &buf, buf_size) ;
 
-    for(int i = 0; i < buf_size; i++)
+
+    if(read_state>0)
+    {    std::cout << "Len: " << read_state<< std::endl;
+        //for(int i = 0; i < buf_size; i++)
+        //{
+            //std::cout << (int)buf[i]<<"\t";
+
+        //}
+    //4 byte --> float union
+    union
     {
-        std::cout << (int)buf[i]<<"\t";
+        float f;
+        unsigned char b[4];
+    }u;
 
-    }
-   // union
-   // {
-    //    float f;
-     //   unsigned char b[4];
-   // }u;
-    //u.b[0]=buf[0];
-     //u.b[1]=buf[1];
-      //u.b[2]=buf[2];
-      // u.b[3]=buf[3];
-      // std::cout<<"nasz float to "<<u.f<<std::endl;
+     u.b[0]=buf[3];
+     u.b[1]=buf[4];
+     u.b[2]=buf[5];
+     u.b[3]=buf[6];
+
+     //car velocity
+     *velocity = u.f;
+
+     //tf mini distance
+     *tf_mini = buf[7];
+     *tf_mini = (*tf_mini<<8) | buf[8];
+
     std::cout << std::endl;
+    }
 }
 
 void USB_STM::data_pack(uint32_t velo,uint32_t ang,std::vector<uint32_t>flags,data_container *container)
