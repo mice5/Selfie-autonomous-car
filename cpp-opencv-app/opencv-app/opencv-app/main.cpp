@@ -21,7 +21,7 @@
 
 #define CAMERA_INDEX 0
 #define CAM_RES_X 752//640
-#define CAM_RES_Y 480
+#define CAM_RES_Y 400
 #define FRAME_TIME 10
 
 
@@ -92,7 +92,7 @@ void CallBackFunc(int event, int x, int y, int flags, void* userdata)
 }
 #endif
 
-int main()
+int main_not()
 {
     ids_test.copyTo(rect);
 //#ifdef DEBUG_MODE
@@ -139,9 +139,9 @@ int main()
 
 #ifdef IDS_MODE
     cvNamedWindow("frame_ids",1);
-    ids_camera.initialize_camera(&hCam, frame_ids);
-    ids_camera.setting_auto_params(&hCam);
-    ids_camera.change_params(&hCam);
+    ids_camera.initialize_camera();
+    ids_camera.setting_auto_params();
+    ids_camera.change_params();
 #ifdef DEBUG_MODE
     ids_camera.create_trackbars();
 #endif
@@ -263,7 +263,7 @@ cv::namedWindow("Frame_ids", 1);
 
 #endif
 #ifdef IDS_MODE
-ids_camera.setting_auto_params(&hCam);
+ids_camera.setting_auto_params();
 #endif
 // Main loop
 
@@ -322,8 +322,8 @@ ids_camera.setting_auto_params(&hCam);
 #endif
 
 #ifdef IDS_MODE
-        ids_camera.get_frame(&hCam,752,480,ids_image);
-        ids_camera.update_params(&hCam);
+//        ids_camera.get_frame(752,480,ids_image);
+        ids_camera.update_params();
 
         //writes how many fps we have
         //std::cout << "FPS: "<<ids_camera.NEWFPS<< std::endl;

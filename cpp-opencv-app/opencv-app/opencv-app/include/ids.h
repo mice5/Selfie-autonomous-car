@@ -7,18 +7,51 @@
 #include "opencv2/opencv.hpp"
 #include "ueye.h"
 
+#include <pthread.h>
 
-#define IDS_WIDTH 480
-#define IDS_HEIGHT 752
+#define IDS_WIDTH 752
+#define IDS_HEIGHT 400
+#define IMAGE_COUNT 87
 
 class IDS_PARAMETERS {
+
+    typedef struct _UEYE_IMAGE
+    {
+        char *pBuf;
+        INT nImageID;
+        INT nImageSeqNum;
+        INT nBufferSize;
+    } UEYE_IMAGE, *PUEYE_IMAGE;
+
+    HIDS m_hCamera;
+    char *m_pLastBuffer;
+    bool algorithm_ready = true;
+    double meanfps = 0.0;
+    UEYE_IMAGE m_Images[IMAGE_COUNT];
+
+    void ProcessFrame ();
+    void updateFps (double fps);
+
+    void frameEvent(void);
+
+    bool _AllocImages (int nWidth, int nHeight, int nBitspp);
+    INT _GetImageNum (char* pbuf);
+    void _FreeImages ();
+    void _EmptyImages ();
+    INT _GetImageID (char* pbuf);
+
+    pthread_mutex_t signal_mutex = PTHREAD_MUTEX_INITIALIZER;
+    pthread_cond_t frame_signal = PTHREAD_COND_INITIALIZER;
 public:
 
-    UINT PixelClock = 40;
+    cv::Mat ids_frame = cv::Mat(IDS_HEIGHT, IDS_WIDTH, CV_8UC3);
+    pthread_mutex_t frame_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+    UINT PixelClock = 35;
     int pixelclock_slider = 40;
     double Exposure = 10.0;
     int exposure_slider = 100;
-    double FPS = 82, NEWFPS;
+    double FPS = 76, NEWFPS;
     int fps_slider = 82;
 
     int Master_GAIN_Factor;//=300;
@@ -35,11 +68,18 @@ public:
     char* pMem = NULL;
     int memID = 0;
 
-    void get_frame(HIDS* hCam, int width, int height,cv::Mat& mat, HWND* m_hWndDisplay);
-    void initialize_camera(HIDS* hCam, cv::Mat& mat);
-	void change_params(HIDS* hCam);
-	void setting_auto_params(HIDS* hCam);
-	void update_params(HIDS *hCam);
+    void setAlgorithmReady();
+
+    double getFPS();
+    uchar* get_frame();
+    HIDS getCameraHID();
+
+    void frame_loop();
+    void initialize_camera();
+    void exit();
+    void change_params();
+    void setting_auto_params();
+    void update_params();
     void create_trackbars(void);
 
 };
