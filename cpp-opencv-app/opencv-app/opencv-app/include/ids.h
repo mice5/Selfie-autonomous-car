@@ -13,7 +13,7 @@
 #define IDS_HEIGHT 400
 #define IMAGE_COUNT 87
 
-class IDS_PARAMETERS {
+class IDS {
 
     typedef struct _UEYE_IMAGE
     {
@@ -39,6 +39,8 @@ class IDS_PARAMETERS {
     void _FreeImages ();
     void _EmptyImages ();
     INT _GetImageID (char* pbuf);
+
+    pthread_t frame_thread;
 
     pthread_mutex_t signal_mutex = PTHREAD_MUTEX_INITIALIZER;
     pthread_cond_t frame_signal = PTHREAD_COND_INITIALIZER;
@@ -74,6 +76,7 @@ public:
     uchar* get_frame();
     HIDS getCameraHID();
 
+    void init();
     void frame_loop();
     void initialize_camera();
     void exit();
@@ -83,6 +86,7 @@ public:
     void create_trackbars(void);
 
 };
-
-
+extern IDS ids;
+extern pthread_cond_t algorithm_signal;
+extern pthread_mutex_t algorithm_signal_mutex;
 #endif

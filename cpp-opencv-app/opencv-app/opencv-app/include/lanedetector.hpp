@@ -6,8 +6,12 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <include/thread.hpp>
 
-#define CAM_RES_X 752//640
-#define CAM_RES_Y 480
+//#ifndef CAM_RES_X
+//#define CAM_RES_X 752//640
+//#endif
+//#ifndef CAM_RES_Y
+//#define CAM_RES_Y 480
+//#endif
 
 #define PI 3.1415926
 

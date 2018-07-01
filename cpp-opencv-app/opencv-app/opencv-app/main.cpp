@@ -20,11 +20,16 @@
 //#define MARCZUK_MODE
 
 #define CAMERA_INDEX 0
+
+#ifdef IDS_MODE
+#define CAM_RES_X IDS_WIDTH
+#define CAM_RES_Y IDS_HEIGHT
+#else
 #define CAM_RES_X 752//640
 #define CAM_RES_Y 400
+#endif
+
 #define FRAME_TIME 10
-
-
 
 // Handlers for custom classes
 LaneDetector laneDetector;
@@ -34,8 +39,6 @@ SharedMemory shm_lidar_data(50001);
 SharedMemory shm_lane_points(50002);
 SharedMemory shm_usb_to_send(50003);
 SharedMemory shm_watchdog(50004);
-IDS_PARAMETERS ids_camera;
-HIDS hCam = 1;
 
 cv::Mat frame_ref(CAM_RES_Y, CAM_RES_X, CV_8UC1);
 void update_trackbar(int, void*)
@@ -47,7 +50,6 @@ void update_trackbar(int, void*)
 bool close_app = false;
 std::mutex mu;
 
-cv::Mat ids_test (480, 752, CV_8UC3);
 cv :: Mat rect;
 
 #ifdef MARCZUK_MODE
@@ -92,9 +94,8 @@ void CallBackFunc(int event, int x, int y, int flags, void* userdata)
 }
 #endif
 
-int main_not()
+int main()
 {
-    ids_test.copyTo(rect);
 //#ifdef DEBUG_MODE
     //FPS
     struct timespec start, end;
@@ -139,12 +140,7 @@ int main_not()
 
 #ifdef IDS_MODE
     cvNamedWindow("frame_ids",1);
-    ids_camera.initialize_camera();
-    ids_camera.setting_auto_params();
-    ids_camera.change_params();
-#ifdef DEBUG_MODE
-    ids_camera.create_trackbars();
-#endif
+    ids.init();
 #endif
 
 #ifndef IDS_MODE
@@ -217,9 +213,9 @@ cv::namedWindow("Frame_ids", 1);
 #endif
 
 #ifdef IDS_MODE
-        cv::Mat ids_image (480, 752, CV_8UC3);
-        ids_camera.get_frame(&hCam,752,480,ids_image);
-        ids_camera.update_params(&hCam);
+        cv::Mat ids_image (CAM_RES_X, CAM_RES_X, CV_8UC3);
+        ids.get_frame(&hCam,CAM_RES_X,CAM_RES_X,ids_image);
+        ids.update_params(&hCam);
         ids_image.copyTo(frame_ids);
         lightDetector.prepare_first_image(frame_ids,old_frame,lightDetector.roi_number);
 #endif
@@ -233,9 +229,9 @@ cv::namedWindow("Frame_ids", 1);
 #endif
 
 #ifdef IDS_MODE
-        cv::Mat ids_image (480, 752, CV_8UC3);
-        ids_camera.get_frame(&hCam,752,480,ids_image);
-        ids_camera.update_params(&hCam);
+        cv::Mat ids_image (CAM_RES_X, CAM_RES_X, CV_8UC3);
+        ids.get_frame(&hCam,CAM_RES_X,CAM_RES_X,ids_image);
+        ids.update_params(&hCam);
         //other way doesn't work
         ids_image.copyTo(frame_ids);
         cv::imshow("Frame_ids", frame_ids);
@@ -263,36 +259,9 @@ cv::namedWindow("Frame_ids", 1);
 
 #endif
 #ifdef IDS_MODE
-ids_camera.setting_auto_params();
+ids.setting_auto_params();
 #endif
 // Main loop
-
-#ifdef MARCZUK_MODE
-
-    cv::namedWindow("kolor pick",cv::WINDOW_AUTOSIZE);
-    cv::setMouseCallback("kolor pick", CallBackFunc, NULL);
-
-    while(true)
-    {
-
-
-        ids_camera.get_frame(&hCam,752,480,ids_test);
-        ids_camera.update_params(&hCam);
-
-        laneDetector.Undist(ids_test, undist_frame, cameraMatrix, distCoeffs);
-
-        laneDetector.Hsv(undist_frame, frame_out_yellow, frame_out_white, frame_out_edge_yellow, frame_out_edge_white);
-        //cv::cvtColor(ids_test,ids_test,cv::COLOR_BGR2RGB);
-        cv::cvtColor(ids_test,ids_test, cv::COLOR_BGR2HSV);
-
-        imshow("kolor pick",frame_out_yellow);
-        char keypressed = (char)cv::waitKey(FRAME_TIME);
-
-        if(keypressed == 'k')
-            break;
-
-    }
-#endif
 
     cv::namedWindow("3.1 Yellow Bird Eye", 1);
     cv::namedWindow("3.2 White Bird Eye", 1);
@@ -322,14 +291,11 @@ ids_camera.setting_auto_params();
 #endif
 
 #ifdef IDS_MODE
-//        ids_camera.get_frame(752,480,ids_image);
-        ids_camera.update_params();
+//        ids.update_params();
 
-        //writes how many fps we have
-        //std::cout << "FPS: "<<ids_camera.NEWFPS<< std::endl;
-
-        //other way doesn't work
-       //ids_image.copyTo(frame_ids);
+        pthread_mutex_lock(&ids.frame_mutex);
+        ids.ids_frame.copyTo(ids_image);
+        pthread_mutex_unlock(&ids.frame_mutex);
 #endif
 
 
@@ -372,75 +338,79 @@ ids_camera.setting_auto_params();
 
 
 #ifdef DEBUG_MODE
-        // Display info on screen
-        //cv::imshow("Camera", frame);
-        //cv::imshow("UndsCamera", undist_frame);
+        static int denom = 0;
+        if(++denom > 5){
+            denom = 0;
+            // Display info on screen
+            //cv::imshow("Camera", frame);
+            //cv::imshow("UndsCamera", undist_frame);
 #ifdef IDS_MODE
-        cv::imshow("0 Frame", ids_image);
+            cv::imshow("0 Frame", ids_image);
 #endif
 #ifndef IDS_MODE
-        cv::imshow("0 Frame",frame);
+            cv::imshow("0 Frame",frame);
 #endif
-        cv::imshow("1.1 Yellow Line", frame_out_yellow);
-        cv::imshow("1.2 White Line", frame_out_white);
-        cv::imshow("2.1 Yellow Edges", frame_out_edge_yellow);
-        cv::imshow("2.2 White Edges", frame_out_edge_white);
-        //cv::imshow("BirdEyeTtransform", bird_eye_frame_tr);
-        cv::imshow("3.1 Yellow Bird Eye", yellow_bird_eye_frame);
-        cv::imshow("3.2 White Bird Eye", white_bird_eye_frame);
-   //     cv::imshow("4.1 Yellow Vector", yellow_vector_frame);
-   //     cv::imshow("4.2 White Vector", white_vector_frame);
-   //     cv::imshow("5 Cone Detect", cone_frame_out);
+            cv::imshow("1.1 Yellow Line", frame_out_yellow);
+            cv::imshow("1.2 White Line", frame_out_white);
+            cv::imshow("2.1 Yellow Edges", frame_out_edge_yellow);
+            cv::imshow("2.2 White Edges", frame_out_edge_white);
+            //cv::imshow("BirdEyeTtransform", bird_eye_frame_tr);
+            cv::imshow("3.1 Yellow Bird Eye", yellow_bird_eye_frame);
+            cv::imshow("3.2 White Bird Eye", white_bird_eye_frame);
+            //     cv::imshow("4.1 Yellow Vector", yellow_vector_frame);
+            //     cv::imshow("4.2 White Vector", white_vector_frame);
+            //     cv::imshow("5 Cone Detect", cone_frame_out);
 
-        //cv::imshow("TEST", test);
-        //test = cv::Mat::zeros(CAM_RES_Y, CAM_RES_X, CV_8UC3);
+            //cv::imshow("TEST", test);
+            //test = cv::Mat::zeros(CAM_RES_Y, CAM_RES_X, CV_8UC3);
 
-        yellow_vector_frame = cv::Mat::zeros(CAM_RES_Y, CAM_RES_X, CV_8UC3);
-        white_vector_frame = cv::Mat::zeros(CAM_RES_Y, CAM_RES_X, CV_8UC3);
-        test_lane = cv::Mat::zeros(CAM_RES_Y, CAM_RES_X, CV_8UC3);
+            yellow_vector_frame = cv::Mat::zeros(CAM_RES_Y, CAM_RES_X, CV_8UC3);
+            white_vector_frame = cv::Mat::zeros(CAM_RES_Y, CAM_RES_X, CV_8UC3);
+            test_lane = cv::Mat::zeros(CAM_RES_Y, CAM_RES_X, CV_8UC3);
 
-        // Get input from user
-        char keypressed = (char)cv::waitKey(FRAME_TIME);
+            // Get input from user
+            char keypressed = (char)cv::waitKey(FRAME_TIME);
 
-        // Process given input
-        if( keypressed == 27 )
-            break;
+            // Process given input
+            if( keypressed == 27 )
+                break;
 
-        switch(keypressed)
-        {
-        case '1':
-        {
-            cv::Mat LIDAR_data = cv::Mat(FRAME_X, FRAME_Y, CV_8UC3);
-
-            while(true)
+            switch(keypressed)
             {
-                lidar.read_new_data();
-                lidar.polar_to_cartesian();
-                lidar.draw_data(LIDAR_data);
+            case '1':
+            {
+                cv::Mat LIDAR_data = cv::Mat(FRAME_X, FRAME_Y, CV_8UC3);
 
-                // Show data in window
-                cv::imshow("LIDAR", LIDAR_data);
-                // Clear window for next frame data
-                LIDAR_data = cv::Mat::zeros(FRAME_X, FRAME_Y, CV_8UC3);
+                while(true)
+                {
+                    lidar.read_new_data();
+                    lidar.polar_to_cartesian();
+                    lidar.draw_data(LIDAR_data);
 
-                // Get input from user
-                char keypressed_1 = (char)cv::waitKey(100);
+                    // Show data in window
+                    cv::imshow("LIDAR", LIDAR_data);
+                    // Clear window for next frame data
+                    LIDAR_data = cv::Mat::zeros(FRAME_X, FRAME_Y, CV_8UC3);
 
-                // Process given input
-                if( keypressed_1 == 27 )
-                    break;
+                    // Get input from user
+                    char keypressed_1 = (char)cv::waitKey(100);
+
+                    // Process given input
+                    if( keypressed_1 == 27 )
+                        break;
+                }
+
+
+                break;
             }
+            case '2':
 
+                break;
 
-            break;
-        }
-        case '2':
+            default:
 
-            break;
-
-        default:
-
-            break;
+                break;
+            }
         }
 #endif
         if(licznik_czas > 100)
@@ -466,8 +436,7 @@ ids_camera.setting_auto_params();
 #endif
 
 #ifdef IDS_MODE
-    is_FreeImageMem(hCam, ids_camera.pMem, ids_camera.memID);
-    is_ExitCamera(hCam);
+    ids.exit();
 #endif
 
     shm_lidar_data.close();
