@@ -69,6 +69,7 @@ public:
     void drawPoints_both(std::vector<std::vector<cv::Point>> &input_white, cv::Mat &output_white,std::vector<std::vector<cv::Point>> &input_yellow, cv::Mat &output_yellow);
     void ConeDetection(cv::Mat frame_in, cv::Mat &frame_out, std::vector<cv::Point> &conePoints);
     void ConeDetection_new(cv::Mat frame_in, cv::Mat &frame_out, std::vector<cv::Point> &conePoints);
+    void StopLine(cv::Mat frame_in, cv::Mat &hist_frame, cv::Mat &hsv_frame, bool &flag);
     std::vector<cv::Point> cones_vector;
 
     // Birdeye

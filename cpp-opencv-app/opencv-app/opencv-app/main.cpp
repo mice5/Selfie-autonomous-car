@@ -9,10 +9,30 @@
 #include <include/stoplights.h>
 #include <include/ids.h>
 
+//#define TIMING
+
+#ifdef TIMING
+#define INIT_TIMER auto start1 = std::chrono::high_resolution_clock::now();
+#define START_TIMER  start1 = std::chrono::high_resolution_clock::now();
+#define STOP_TIMER(name)  std::cout << "RUNTIME of " << name << ": " << \
+    std::chrono::duration_cast<std::chrono::microseconds>( \
+            std::chrono::high_resolution_clock::now()-start1 \
+    ).count() << " us " << std::endl;
+#else
+#define INIT_TIMER
+#define START_TIMER
+#define STOP_TIMER(name)
+#endif
+
+#define INIT_TIMER2 auto start2 = std::chrono::high_resolution_clock::now();
+#define START_TIMER2  start2 = std::chrono::high_resolution_clock::now();
+#define TIMER2_DIFF ((double)(std::chrono::duration_cast<std::chrono::microseconds>( \
+    std::chrono::high_resolution_clock::now()-start2).count()))
+
 // Race mode ---> fps boost
 // Debug mode --> display data
 //#define RACE_MODE
-#define DEBUG_MODE
+//#define DEBUG_MODE
 #define NO_USB
 //#define STOPLIGHTS_MODE
 #define IDS_MODE
@@ -96,12 +116,15 @@ void CallBackFunc(int event, int x, int y, int flags, void* userdata)
 
 int main()
 {
+    INIT_TIMER
+    INIT_TIMER2
 //#ifdef DEBUG_MODE
     //FPS
     struct timespec start, end;
     unsigned int licznik_czas = 0;
     float seconds = 0;
     float fps = 0;
+
 //#endif
 
     // Declaration of cv::MAT variables
@@ -114,6 +137,7 @@ int main()
     cv::Mat yellow_vector_frame(CAM_RES_Y, CAM_RES_X, CV_8UC3);
     cv::Mat white_vector_frame(CAM_RES_Y, CAM_RES_X, CV_8UC3);
     cv::Mat undist_frame, cameraMatrix, distCoeffs;
+    cv::Mat hsv_frame, hist_frame;
     cv::Mat cone_frame_out;
     cv::Mat frame_out_yellow, frame_out_white, frame_out_edge_yellow, frame_out_edge_white;
     cv::Mat test_lane(CAM_RES_Y, CAM_RES_X, CV_8UC3);
@@ -204,63 +228,81 @@ int main()
 
 //        return 0;
 //    }
-
+    static int denom = 0;
 
 #ifdef STOPLIGHTS_MODE
-cv::namedWindow("Frame_ids", 1);
+    cv::namedWindow("Frame",1);
+    cv::namedWindow("Light detection",1);
+    cv::namedWindow("ROI",1);
+
+    for(int i = 0; i < 15; i++){
+#ifndef IDS_MODE
+            camera >> frame;
+#else
+        pthread_cond_wait(&algorithm_signal, &algorithm_signal_mutex);
+        pthread_mutex_lock(&ids.frame_mutex);
+        ids.ids_frame.copyTo(frame);
+        pthread_mutex_unlock(&ids.frame_mutex);
+#endif
+        lightDetector.prepare_first_image(frame,old_frame,lightDetector.roi_number);
+    }
+
+    while(true){
+        if(licznik_czas == 0)
+        {
+            clock_gettime(CLOCK_MONOTONIC, &start);
+        }
 #ifndef IDS_MODE
         camera >> frame;
+#else
+        pthread_cond_wait(&algorithm_signal, &algorithm_signal_mutex);
+        pthread_mutex_lock(&ids.frame_mutex);
+        ids.ids_frame.copyTo(frame);
+        pthread_mutex_unlock(&ids.frame_mutex);
 #endif
-
-#ifdef IDS_MODE
-        cv::Mat ids_image (CAM_RES_X, CAM_RES_X, CV_8UC3);
-        ids.get_frame(&hCam,CAM_RES_X,CAM_RES_X,ids_image);
-        ids.update_params(&hCam);
-        ids_image.copyTo(frame_ids);
-        lightDetector.prepare_first_image(frame_ids,old_frame,lightDetector.roi_number);
+#ifdef DEBUG_MODE
+        lightDetector.test_roi(frame,display);
 #endif
-
-    while(true)
-    {
-// Get new frame from camera
-#ifndef IDS_MODE
-        camera >> frame;
         lightDetector.find_start(frame,diffrence,old_frame,lightDetector.roi_number);
-#endif
-
-#ifdef IDS_MODE
-        cv::Mat ids_image (CAM_RES_X, CAM_RES_X, CV_8UC3);
-        ids.get_frame(&hCam,CAM_RES_X,CAM_RES_X,ids_image);
-        ids.update_params(&hCam);
-        //other way doesn't work
-        ids_image.copyTo(frame_ids);
-        cv::imshow("Frame_ids", frame_ids);
-        cv::waitKey(20);
-        // lightDetector.test_roi(ids_image,display);
-        lightDetector.find_start(ids_image,diffrence,old_frame,lightDetector.roi_number);
-#endif
 
 #ifdef DEBUG_MODE
-        if (lightDetector.start_finding ==true){
-                cv::imshow("Frame",ids_image);
-                cv::imshow("Light detection",diffrence);
-                //  cv::imshow("Light detection", display);
-        }
-        if (lightDetector.start_light == true){
-                std::cout<<"START"<<std::endl;
-        }
-        else
-                std::cout<<"WAIT"<<std::endl;
+        if (++denom>5)
+        {
+            denom = 0;
+            cv::imshow("Frame", frame);
+            cv::imshow("Light detection", diffrence);
+            cv::imshow("ROI", display);
 
-
+        }
+        cv::waitKey(1);
 #endif
 
+        if (lightDetector.start_light == true)
+        {
+//                std::cout<<"START"<<std::endl;
+                red_light_visible = false;
+                green_light_visible = true;
+                break;
+        }
+        else{
+//                std::cout<<"WAIT"<<std::endl;
+    }
+        if(licznik_czas > 100)
+        {
+            licznik_czas = 0;
+            clock_gettime(CLOCK_MONOTONIC, &end);
+            seconds = (end.tv_sec - start.tv_sec);
+            fps  =  1 / (seconds / 100);
+            std::cout <<"FPS: " << fps << std::endl;
+        }
+        else
+        {
+            licznik_czas++;
+        }
     }
 
 #endif
-#ifdef IDS_MODE
-ids.setting_auto_params();
-#endif
+
 // Main loop
 
     cv::namedWindow("3.1 Yellow Bird Eye", 1);
@@ -275,6 +317,7 @@ ids.setting_auto_params();
 
     while(true)
     {
+        pthread_cond_wait(&algorithm_signal, &algorithm_signal_mutex);
 //#ifdef DEBUG_MODE
         //FPS
         if(licznik_czas == 0)
@@ -283,7 +326,7 @@ ids.setting_auto_params();
         }
         //FPS
 //#endif
-
+START_TIMER
         // Get new frame from camera
 
 #ifndef IDS_MODE
@@ -297,35 +340,51 @@ ids.setting_auto_params();
         ids.ids_frame.copyTo(ids_image);
         pthread_mutex_unlock(&ids.frame_mutex);
 #endif
-
-
+STOP_TIMER("Copying from Camera")
+START_TIMER
         // Process frame
 #ifndef IDS_MODE
         laneDetector.Undist(frame, undist_frame, cameraMatrix, distCoeffs);
 #endif
 #ifdef IDS_MODE
         laneDetector.Undist(ids_image, undist_frame, cameraMatrix, distCoeffs);
+//        laneDetector.StopLine(ids_image, hist_frame, hsv_frame, stop_line_detected);
+        STOP_TIMER("Distort")
+        START_TIMER
 #endif
+
         //laneDetector.Hsv(undist_frame, frame_out_yellow, frame_out_white, frame_out_edge_yellow, frame_out_edge_white);
         laneDetector.Hsv_both(undist_frame, frame_out_yellow, frame_out_white, frame_out_edge_yellow, frame_out_edge_white);
+        STOP_TIMER("HSV")
+        START_TIMER
         //laneDetector.BirdEye(frame_out_edge_yellow, yellow_bird_eye_frame);
         //laneDetector.BirdEye(frame_out_edge_white, white_bird_eye_frame);
         laneDetector.bird_eye(frame_out_edge_white, white_bird_eye_frame);
         laneDetector.bird_eye(frame_out_edge_yellow, yellow_bird_eye_frame);
+        STOP_TIMER("BIRD EYE")
+        START_TIMER
         //laneDetector.colorTransform(yellow_bird_eye_frame, yellow_bird_eye_frame_tr);
         //laneDetector.colorTransform(white_bird_eye_frame, white_bird_eye_frame_tr);
 
         // Detect cones
-        laneDetector.ConeDetection(frame_ids, cone_frame_out, laneDetector.cones_vector);
+//        laneDetector.ConeDetection(frame_ids, cone_frame_out, laneDetector.cones_vector);
 
         // Detect lines
         laneDetector.detectLine_both(white_bird_eye_frame, white_vector,yellow_bird_eye_frame, yellow_vector);
+        STOP_TIMER("Detect lines")
+        START_TIMER
         //laneDetector.detectLine(yellow_bird_eye_frame, yellow_vector);
         //laneDetector.detectLine(white_bird_eye_frame, white_vector);
        laneDetector.drawPoints_both(white_vector, white_vector_frame,yellow_vector, yellow_vector_frame);
+        STOP_TIMER("Draw points")
+        START_TIMER
         //laneDetector.drawPoints(yellow_vector, yellow_vector_frame);
        // laneDetector.drawPoints(white_vector, white_vector_frame);
 
+        // Stop line
+        laneDetector.StopLine(ids_image, hist_frame, hsv_frame, stop_line_detected);
+        STOP_TIMER("STOP LINE AGAIN")
+        START_TIMER
         // Push data
         shm_lane_points.push_lane_data(yellow_vector, white_vector, laneDetector.cones_vector);
         // Test pull
@@ -333,12 +392,13 @@ ids.setting_auto_params();
 
         // Push data
         shm_usb_to_send.push_scene_data(reset_stm, red_light_visible, green_light_visible, stop_line_detected, stop_line_distance);
+        STOP_TIMER("SHMEM")
+        START_TIMER
         // Test pull
         // shm_usb_to_send.pull_scene_data();
 
 
 #ifdef DEBUG_MODE
-        static int denom = 0;
         if(++denom > 5){
             denom = 0;
             // Display info on screen
@@ -346,6 +406,8 @@ ids.setting_auto_params();
             //cv::imshow("UndsCamera", undist_frame);
 #ifdef IDS_MODE
             cv::imshow("0 Frame", ids_image);
+            cv::imshow("Hist frame", hist_frame);
+            cv::imshow("Hsv frame", hsv_frame);
 #endif
 #ifndef IDS_MODE
             cv::imshow("0 Frame",frame);
@@ -360,6 +422,8 @@ ids.setting_auto_params();
             //     cv::imshow("4.1 Yellow Vector", yellow_vector_frame);
             //     cv::imshow("4.2 White Vector", white_vector_frame);
             //     cv::imshow("5 Cone Detect", cone_frame_out);
+            //cv::imshow("Hist frame", hist_frame);
+            //cv::imshow("Hsv frame", hsv_frame);
 
             //cv::imshow("TEST", test);
             //test = cv::Mat::zeros(CAM_RES_Y, CAM_RES_X, CV_8UC3);
@@ -369,7 +433,7 @@ ids.setting_auto_params();
             test_lane = cv::Mat::zeros(CAM_RES_Y, CAM_RES_X, CV_8UC3);
 
             // Get input from user
-            char keypressed = (char)cv::waitKey(FRAME_TIME);
+            char keypressed = (char)cv::waitKey(1);
 
             // Process given input
             if( keypressed == 27 )
@@ -415,11 +479,13 @@ ids.setting_auto_params();
 #endif
         if(licznik_czas > 100)
         {
+
             licznik_czas = 0;
             clock_gettime(CLOCK_MONOTONIC, &end);
             seconds = (end.tv_sec - start.tv_sec);
-            fps  =  1 / (seconds / 100);
+            fps  =  100*1e6 / TIMER2_DIFF;
             std::cout <<"FPS: " << fps << std::endl;
+            START_TIMER2
         }
         else
         {
@@ -427,6 +493,7 @@ ids.setting_auto_params();
         }
 
 
+STOP_TIMER("some long loop")
 
     }
 

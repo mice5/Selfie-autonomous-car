@@ -403,3 +403,102 @@ void LaneDetector::ConeDetection_new(cv::Mat frame_in, cv::Mat &frame_out, std::
     dst.copyTo(frame_out);
 }
 
+void LaneDetector::StopLine(cv::Mat frame_in, cv::Mat &hist_frame, cv::Mat &hsv_frame, bool &flag)
+{
+    cv::Mat imageHSV;
+
+    cv::Mat mag_Line_frame;
+    std::vector<std::vector<cv::Point> > contours;
+    std::vector<cv::Vec4i> hierarchy;
+
+    cvtColor(frame_in, imageHSV, cv::COLOR_BGR2HSV);
+    hsv_frame = imageHSV;
+
+    cv::Scalar mag_minHSV = cv::Scalar(35, 0, 0);
+    cv::Scalar mag_maxHSV = cv::Scalar(60, 100, 255);
+
+    cv::Mat mag_maskHSV, mag_resultHSV;
+
+    inRange(frame_in, mag_minHSV, mag_maxHSV, mag_maskHSV);
+    bitwise_and(imageHSV, imageHSV, mag_resultHSV, mag_maskHSV);
+    medianBlur(mag_resultHSV, mag_resultHSV, 5);
+
+    cv::Mat mask = cv::Mat::zeros(cv::Size(mag_resultHSV.cols, mag_resultHSV.rows), CV_8UC1);
+    cv::Point points[4] =
+    {
+        cv::Point(mag_resultHSV.cols, mag_resultHSV.rows),
+        cv::Point(0, mag_resultHSV.rows),
+        cv::Point(60, mag_resultHSV.rows / 2),
+        cv::Point(mag_resultHSV.cols - 60, mag_resultHSV.rows / 2)
+    };
+
+    cv::fillConvexPoly(mask, points, 4, cv::Scalar(255, 0, 0));
+    cv::Mat mask_out;
+    cv::bitwise_and(mag_resultHSV, mag_resultHSV, mask_out, mask);
+
+    hsv_frame = mask_out;
+
+    std::vector<cv::Mat> bgr_planes;
+    split(mag_resultHSV, bgr_planes);
+
+    int histSize = 256;
+
+    float range[] = { 0, 256 };
+    const float* histRange = { range };
+
+    bool uniform = true; bool accumulate = false;
+
+    cv::Mat b_hist, g_hist, r_hist;
+
+    cv::calcHist(&bgr_planes[0], 1, 0, cv::Mat(), b_hist, 1, &histSize, &histRange, uniform, accumulate);
+    cv::calcHist(&bgr_planes[1], 1, 0, cv::Mat(), g_hist, 1, &histSize, &histRange, uniform, accumulate);
+    cv::calcHist(&bgr_planes[2], 1, 0, cv::Mat(), r_hist, 1, &histSize, &histRange, uniform, accumulate);
+
+    int hist_w = 512; int hist_h = 400;
+    int bin_w = cvRound((double)hist_w / histSize);
+
+    cv::Mat histImage(hist_h, hist_w, CV_8UC3, cv::Scalar(0, 0, 0));
+
+    cv::normalize(b_hist, b_hist, 0, histImage.rows, cv::NORM_MINMAX, -1, cv::Mat());
+    cv::normalize(g_hist, g_hist, 0, histImage.rows, cv::NORM_MINMAX, -1, cv::Mat());
+    cv::normalize(r_hist, r_hist, 0, histImage.rows, cv::NORM_MINMAX, -1, cv::Mat());
+
+    std::vector<cv::Point> b_p_vec;
+
+    for (int i = 1; i < histSize; i++)
+    {
+        cv::line(histImage, cv::Point(bin_w*(i - 1), hist_h - cvRound(b_hist.at<float>(i - 1))),
+            cv::Point(bin_w*(i), hist_h - cvRound(b_hist.at<float>(i))),
+            cv::Scalar(255, 0, 0), 2, 8, 0);
+        b_p_vec.push_back(cv::Point(bin_w*(i - 1), hist_h - cvRound(b_hist.at<float>(i - 1))));
+        cv::line(histImage, cv::Point(bin_w*(i - 1), hist_h - cvRound(g_hist.at<float>(i - 1))),
+            cv::Point(bin_w*(i), hist_h - cvRound(g_hist.at<float>(i))),
+            cv::Scalar(0, 255, 0), 2, 8, 0);
+        cv::line(histImage, cv::Point(bin_w*(i - 1), hist_h - cvRound(r_hist.at<float>(i - 1))),
+            cv::Point(bin_w*(i), hist_h - cvRound(r_hist.at<float>(i))),
+            cv::Scalar(0, 0, 255), 2, 8, 0);
+    }
+    hist_frame = histImage;
+
+    int tmp_maxh = hist_h;
+    int tmp_imaxh = 0;
+    for (int i = 0; i < histSize; i++)
+    {
+        if (hist_h - cvRound(b_hist.at<float>(i)) < tmp_maxh && hist_h - cvRound(b_hist.at<float>(i)) != 0)
+        {
+            tmp_maxh = hist_h - cvRound(b_hist.at<float>(i));
+            tmp_imaxh = i;
+        }
+    }
+
+    if (tmp_imaxh > 150 && tmp_imaxh < 175)
+    {
+        flag = true;
+        std::cout << "STOP" << std::endl;
+    }
+    else
+    {
+        flag = false;
+    }
+}
+

@@ -11,17 +11,17 @@ Fle include methods definition that can be used with StopLightDetector class
 
 
 
-#define FRAME_WIDTH 640 //1280
-#define FRAME_HEIGHT 480 //720
+#define FRAME_WIDTH 752 //1280
+#define FRAME_HEIGHT 400 //720
 #define THRESH_LEVEL 35
 #define BLUR_SIZE 15
 
 //methode is making roi from input and returning it to output, number tells method with roi, you can test it with test_roi
 void StopLightDetector::make_roi(cv::Mat &input, cv::Mat &output, int number) {
-	int upper_roi = FRAME_HEIGHT / 5;
+    int upper_roi = FRAME_HEIGHT / 10;
 	int middle_roi = FRAME_WIDTH / 2;
 	int width_roi = FRAME_WIDTH / 3;
-	int height_roi = FRAME_WIDTH / 2;
+    int height_roi = FRAME_HEIGHT / 2;
 	cv::Rect roi_rectangle1 = cv::Rect(middle_roi - width_roi, upper_roi, width_roi, height_roi);
 	cv::Rect roi_rectangle2 = cv::Rect(middle_roi, upper_roi, width_roi, height_roi);
 	cv::Rect roi_rectangle3 = cv::Rect(0, upper_roi, width_roi, height_roi);
@@ -54,10 +54,10 @@ void StopLightDetector::make_roi(cv::Mat &input, cv::Mat &output, int number) {
 //methode that tells us which roi is which
 void StopLightDetector::test_roi(cv::Mat &input, cv::Mat &output) {
     start_finding = true;
-	int upper_roi = FRAME_HEIGHT / 5;
+    int upper_roi = FRAME_HEIGHT / 10;
 	int middle_roi = FRAME_WIDTH / 2;
 	int width_roi = FRAME_WIDTH / 3;
-	int height_roi = FRAME_WIDTH / 2;
+    int height_roi = FRAME_HEIGHT / 2;
 	cv::Rect roi_rectangle1 = cv::Rect(middle_roi - width_roi, upper_roi, width_roi, height_roi);
 	cv::Rect roi_rectangle2 = cv::Rect(middle_roi, upper_roi, width_roi, height_roi);
 	cv::Rect roi_rectangle3 = cv::Rect(0, upper_roi, width_roi, height_roi);

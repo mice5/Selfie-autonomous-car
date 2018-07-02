@@ -122,7 +122,6 @@ void IDS::frameEvent(){
 }
 void IDS::frame_loop()
 {
-//    pthread_cond_wait(&frame_signal, &signal_mutex);
     INT ret = is_WaitEvent(m_hCamera, IS_SET_EVENT_FRAME, 1000);
     if(ret == IS_SUCCESS){
         is_DisableEvent (m_hCamera, IS_SET_EVENT_FRAME);
@@ -165,20 +164,7 @@ void IDS::ProcessFrame ()
             ret = is_LockSeqBuf (m_hCamera, nNum, m_pLastBuffer);
             INT copy = is_CopyImageMem(m_hCamera, m_pLastBuffer, nId, (char*)ids_frame.ptr());
             ret |= is_UnlockSeqBuf (m_hCamera, nNum, m_pLastBuffer);
-            char s[20];
-            sprintf(s, "FPS: %lf", getFPS());
-//            cv::putText(ids_frame, s, cv::Point(752/2, 480-30), CV_FONT_HERSHEY_DUPLEX, 0.4, CV_RGB(0, 255, 0), 1.0);
-//            cv::imshow("frame window",ids_frame);
-//            cv::waitKey(1);
             pthread_mutex_unlock(&frame_mutex);
-            if(++cnt > 87){
-                static int frames = 0;
-                frames+=cnt;
-                cnt = 0;
-//                std::cout << "Copy status: " << copy << std::endl;
-//                std::cout << s << std::endl;
-//                std::cout << "Frames counter: " << frames << std::endl;
-            }
 
             pthread_mutex_lock(&algorithm_signal_mutex);
             pthread_cond_signal(&algorithm_signal);
