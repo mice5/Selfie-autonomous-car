@@ -121,6 +121,4 @@ private:
     cv::Mat dst;
 
     std::string label_cone = "cone";
-
-
 };

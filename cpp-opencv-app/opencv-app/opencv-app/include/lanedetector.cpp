@@ -1,7 +1,6 @@
 #include "lanedetector.hpp"
 
 //#define LANETIMING
-
 #ifdef LANETIMING
 #include <chrono>
 #define INIT_LANETIMER static auto startlane = std::chrono::high_resolution_clock::now();
@@ -212,7 +211,6 @@ void LaneDetector::Hsv_both(cv::Mat &frame_in, cv::Mat &yellow_frame_out, cv::Ma
         kernel_v.at<float>(0, 0) = -1;
         kernel_v.at<float>(0, 1) = 0;
         kernel_v.at<float>(0, 2) = 1;
-        //cvtColor(frame_in, imageHSV, cv::COLOR_BGR2HSV);
 
         inRange(frame_in,cv::Scalar(H_down_white, S_down_white, V_down_white),cv::Scalar(H_up_white, S_up_white, V_up_white),white_frame_out);
         inRange(frame_in,cv::Scalar(H_down, S_down, V_down),cv::Scalar(H_up, S_up, V_up),yellow_frame_out);
@@ -222,13 +220,6 @@ void LaneDetector::Hsv_both(cv::Mat &frame_in, cv::Mat &yellow_frame_out, cv::Ma
         filter2D(white_frame_out, white_canny, -1, kernel_v, anchor, 0, cv::BORDER_DEFAULT);
         filter2D(yellow_frame_out,yellow_canny, -1, kernel_v, anchor, 0, cv::BORDER_DEFAULT);
 }
-
-void LaneDetector::colorTransform(cv::Mat &input, cv::Mat &output)
-{
-    cv::cvtColor(input, output, cv::COLOR_RGB2GRAY);
-    //cv::threshold(tmp, output, 20, 255, 1);
-}
-
 
 void LaneDetector::detectLine(cv::Mat &input, std::vector<std::vector<cv::Point>> &output)
 {
@@ -277,7 +268,6 @@ void LaneDetector::detectLine_both(cv::Mat &input_white, std::vector<std::vector
     {
         cv::approxPolyDP(cv::Mat(output_yellow[i]),output_yellow[i], Acc_value, false);
     }
-//    std::cout<<"Punkty:"<<output_yellow.size()<<std::endl;
 }
 
 void LaneDetector::drawPoints(std::vector<std::vector<cv::Point>> &input, cv::Mat &output)
@@ -320,10 +310,7 @@ void LaneDetector::drawPoints_both(std::vector<std::vector<cv::Point>> &input_wh
                 cv::line(output_yellow, cv::Point(input_yellow[i][j - 1]), cv::Point(input_yellow[i][j]), cv::Scalar(0, 0, 255), 2);
         }
     }
-
 }
-
-
 
 void LaneDetector::ConeDetection(cv::Mat frame_in, cv::Mat &frame_out, std::vector<cv::Point> &conePoints)
 {
@@ -379,7 +366,6 @@ void LaneDetector::ConeDetection_new(cv::Mat frame_in, cv::Mat &frame_out, std::
     hierarchy.clear();
     contours.clear();
     cv::cvtColor(frame_in, image_HSV, cv::COLOR_BGR2HSV);
-    //cv::inRange(image_HSV, cv::Scalar(R_down, G_down, B_down), cv::Scalar(R_up, G_up, B_up), img_thresh_low);
     cv::inRange(image_HSV, cv::Scalar(159, 135, 135), cv::Scalar(179, 255, 255), img_thresh_high);
     cv::bitwise_or(image_HSV, image_HSV, result, img_thresh_low);
     cv::morphologyEx(result, result, cv::MORPH_OPEN, (5, 5));
@@ -392,15 +378,6 @@ void LaneDetector::ConeDetection_new(cv::Mat frame_in, cv::Mat &frame_out, std::
     drawing = cv::Mat::zeros(result.size(), CV_8UC3);
 
     std::vector<cv::Rect> boundRect(contours.size());
-    /*
-    for (int i = 0; i < contours.size(); i++)
-    {
-        cv::drawContours(drawing, contours, i, cv::Scalar(255, 0, 0), 2, 7, hierarchy, 0, cv::Point());
-        boundRect[i] = cv::boundingRect(cv::Mat(contours[i]));
-        cv::rectangle(drawing, boundRect[i].tl(), boundRect[i].br(), CV_RGB(200, 200, 0), 2, 8, 0);
-
-        cv::putText(drawing, label_cone, boundRect[i].tl() + cv::Point(0, -5), CV_FONT_HERSHEY_DUPLEX, 0.4, CV_RGB(0, 255, 0), 1.0);
-    }*/
 
     for(int i = 0; i < boundRect.size(); i++)
     {
@@ -568,7 +545,6 @@ void LaneDetector::StopLine(cv::Mat frame_in, cv::Mat &hist_frame, cv::Mat &hsv_
      if(white_pix[0] > 1.5)
      {
          flag = true;
-//         std::cout << "STOP" << std::endl;
      }
      hsv_frame = mask_out;
      STOP_LANETIMER("maska")
