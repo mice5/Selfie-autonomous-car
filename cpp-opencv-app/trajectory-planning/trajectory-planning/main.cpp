@@ -1,14 +1,31 @@
 #include "main.h"
+#include <time.h>
+
+#define TIMING
+
+#ifdef TIMING
+#include <chrono>
+#define INIT_TIMER auto start = std::chrono::high_resolution_clock::now();
+#define START_TIMER  start = std::chrono::high_resolution_clock::now();
+#define STOP_TIMER(name)  std::cout << "RUNTIME of " << name << ": " << \
+    std::chrono::duration_cast<std::chrono::microseconds>( \
+            std::chrono::high_resolution_clock::now()-start \
+    ).count() << " us " << std::endl;
+#else
+#define INIT_TIMER
+#define START_TIMER
+#define STOP_TIMER(name)
+#endif
 
 using namespace std;
 using namespace cv;
 
 //camera params
-const int Height = 480;
+const int Height = 360;
 const int Width = 752;
 
 //rectangle algorithm params
-int number_of_rec_cols = 40;
+int number_of_rec_cols = 47;
 int number_of_rec_raws = 10; //liczba pasów detekcji //slidery ustawiaja
 
 //main MAT
@@ -30,6 +47,7 @@ uint32_t angle_sum = 0;
 
 int main(int argc, char** argv)
 {
+    INIT_TIMER
 
     #if defined(TEST_MODE) || defined (DEBUG_MODE)
     //init_trackbars();
@@ -76,7 +94,9 @@ int main(int argc, char** argv)
     vector<uint32_t> usb_from_vision(5);
     shm_usb_to_stm.init();
 
-
+    SharedMemory shm_dataready(50005,4);
+    uint32_t ready_state = 0;
+    shm_dataready.init();
 
     //usb communication
     USB_STM USB_COM;
@@ -92,34 +112,47 @@ int main(int argc, char** argv)
 ////////////////////////////////////////////WHILE///////////////////////////////////////////////////
 while(1)
 {
+    START_TIMER
     #if defined(TEST_MODE) || defined(DEBUG_MODE)
         number_of_rec_cols = rect_slider[0];
         number_of_rec_raws = rect_slider[1];
     #endif
 
-    #ifdef DEBUG_MODE
+    #if defined(DEBUG_MODE) || defined(RACE_MODE)
     //clear buffer which could have another size
     w_point_vector.clear();
     y_point_vector.clear();
     c_point_vector.clear();
     l_point_vector.clear();
-
     //get new set of points
-    shm_lane_points.pull_line_data(y_point_vector,w_point_vector,c_point_vector);
-    shm_usb_to_stm.pull_usb_data(usb_from_vision);
-    shm_lidar_points.pull_lidar_data(l_point_vector);
 
+
+    if(shm_dataready.pull_signal())
+    {
+        shm_lidar_points.pull_lidar_data(l_point_vector);
+        shm_lane_points.pull_line_data(y_point_vector,w_point_vector,c_point_vector);
+        shm_usb_to_stm.pull_usb_data(usb_from_vision);
+
+        shm_dataready.push_signal(0u);
+    }
+    else
+    {
+        usleep(500);
+        continue;
+    }
+    STOP_TIMER("SHM PULL")
+    START_TIMER
     //preview of received points
     points_preview(w_point_vector,wy_test_mat,CV_RGB(255,255,255));
     points_preview(y_point_vector,wy_test_mat,CV_RGB(255,255,0));
     points_preview(c_point_vector,wy_test_mat,CV_RGB(255,0,0));
-
+    STOP_TIMER("POINT PREVIEW")
+    START_TIMER
     //preview of lidar
     points_preview(l_point_vector,lidar_mat,CV_RGB(255,0,255));
     rectangle(lidar_mat,Point(490,490),Point(510,510),CV_RGB(255,0,0));
-
-    imshow("Podglad", wy_test_mat);
-    imshow("Lidar",lidar_mat);
+    STOP_TIMER("LIDAR PREVIEW")
+    START_TIMER
 
     y_line_detect = 0;
     w_line_detect = 0;
@@ -130,14 +163,24 @@ while(1)
         y_line_detect = 1;
 
         points_to_mat(y_mat,y_point_vector);
+        STOP_TIMER("points_to_mat")
+        START_TIMER
         rectangle_optimize(y_mat,y_spline);
+//        optimization(y_point_vector,y_spline);
+        STOP_TIMER("rectangle_optimize")
+        START_TIMER
     }
     if(w_point_vector.size()>10)
     {
         w_line_detect = 1;
 
         points_to_mat(w_mat,w_point_vector);
+        STOP_TIMER("points_to_mat")
+        START_TIMER
         rectangle_optimize(w_mat,w_spline);
+//        optimization(w_point_vector,w_spline);
+        STOP_TIMER("rectangle_optimize")
+        START_TIMER
     }
 
 
@@ -145,26 +188,37 @@ while(1)
     if(y_line_detect == 1 && w_line_detect == 1)
     {
        two_line_planner(y_spline,w_spline,0,trajectory_path);
+       STOP_TIMER("two_line_planner")
+       START_TIMER
        trajectory_tangent.calculate(trajectory_path,rect_slider[3]);
        trajectory_tangent.angle();
+       STOP_TIMER("trajectory_tangent")
+       START_TIMER
     }
     else if(y_line_detect)
     {
         one_line_planner(y_spline,0,trajectory_path);
+        STOP_TIMER("one_line_planner")
+        START_TIMER
         trajectory_tangent.calculate(trajectory_path,rect_slider[3]);
         trajectory_tangent.angle();
+        STOP_TIMER("trajectory_tangent")
+        START_TIMER
     }
     else if(w_line_detect)
     {
         one_line_planner(w_spline,0,trajectory_path);
+        STOP_TIMER("one_line_planner")
+        START_TIMER
         trajectory_tangent.calculate(trajectory_path,rect_slider[3]);
         trajectory_tangent.angle();
+        STOP_TIMER("trajectory_tangent")
+        START_TIMER
     }
     else
     {
 
     }
-
 
 
     #endif
@@ -203,7 +257,8 @@ while(1)
         angle_sum = 0;
         average_angle_counter = 0;
      }
-
+     STOP_TIMER("AVERAGE")
+     START_TIMER
     #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -244,6 +299,13 @@ while(1)
 
         //show white line mat
         imshow("tryb DEBUG",wy_mat);
+        STOP_TIMER("DRAWING TRAJ")
+        START_TIMER
+
+        imshow("Podglad", wy_test_mat);
+        imshow("Lidar",lidar_mat);
+        STOP_TIMER("2 IMSHOWs")
+        START_TIMER
 
         //clean matrixes
         wy_mat = Mat::zeros(Height,Width,CV_8UC3);
@@ -252,7 +314,7 @@ while(1)
         wy_test_mat = Mat::zeros( Height, Width, CV_8UC3 );//zero matrix
         lidar_mat = Mat::zeros(600,1000, CV_8UC3 );
 
-        if(waitKey(30)>=0)
+        if(waitKey(1)>=0)
             break;
     #endif
 }//end of while(1)

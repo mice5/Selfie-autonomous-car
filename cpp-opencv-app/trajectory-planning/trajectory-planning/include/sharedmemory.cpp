@@ -154,3 +154,17 @@ uint32_t SharedMemory::get_lenght()
 {
     return shared_variable[0];
 }
+
+void SharedMemory::push_signal(uint32_t signal)
+{
+    uint32_t tmp[1] = {signal};
+
+    // Copy data to shm
+    memcpy(shared_variable, tmp, 4);
+}
+bool SharedMemory::pull_signal()
+{
+    if(shared_variable[0])
+        return true;
+    return false;
+}

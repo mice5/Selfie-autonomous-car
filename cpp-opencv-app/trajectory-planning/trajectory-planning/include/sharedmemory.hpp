@@ -36,6 +36,8 @@ public:
     void pull_line_data(std::vector<cv::Point> &y_vector,std::vector<cv::Point> &w_vector,std::vector<cv::Point> &c_vector);
     void pull_lidar_data(std::vector<cv::Point>&l_vector);
     void pull_usb_data(std::vector<uint32_t>&data);
+    void push_signal(uint32_t signal);
+    bool pull_signal();
 
     void close();
     uint32_t get_lenght();

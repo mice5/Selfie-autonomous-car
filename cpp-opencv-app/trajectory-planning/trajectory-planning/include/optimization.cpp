@@ -4,10 +4,26 @@
 using namespace std;
 using namespace cv;
 
+#define OPTTIMING
+
+#ifdef OPTTIMING
+#include <chrono>
+#define INIT_OPTTIMER static auto start_opt = std::chrono::high_resolution_clock::now();
+#define START_OPTTIMER  start_opt = std::chrono::high_resolution_clock::now();
+#define STOP_OPTTIMER(name)  std::cout << "RUNTIME of " << name << ": " << \
+    std::chrono::duration_cast<std::chrono::microseconds>( \
+            std::chrono::high_resolution_clock::now()-start_opt \
+    ).count() << " us " << std::endl;
+#else
+#define INIT_OPTTIMER
+#define START_OPTTIMER
+#define STOP_OPTTIMER(name)
+#endif
 
 int param = 2;
 bool rectangle_optimize(Mat& point_mat,spline_t& spl)
 {
+    INIT_OPTTIMER
     vector<Point> spline_points;
     int rec_height = Height/number_of_rec_raws;
     int rec_width = Width/number_of_rec_cols;//szerokość prostokąta wykrywania
@@ -147,8 +163,10 @@ bool rectangle_optimize(Mat& point_mat,spline_t& spl)
             spline_set.push_back(spline_points.back());//ostatni punkt
         }
 
-
+        START_OPTTIMER
         spl.set_spline(spline_set);
+        STOP_OPTTIMER("spline set")
+        START_OPTTIMER
         return true;
     }
 
@@ -249,4 +267,101 @@ void line_search(int previous_angle, spline_t &path_line)
 
 
 
+void optimization(vector<Point2i> input_vector,spline_t &spl)
+{
+    int rec_height = Height/number_of_rec_raws;
+    int rec_width = Width/number_of_rec_cols;//szerokość prostokąta wykrywania
 
+    std::vector<Point2i> spl_points;
+
+    int points_number[number_of_rec_raws][number_of_rec_cols];
+    for(int i=0;i<number_of_rec_raws;i++)
+    {
+        for(int j=0;j<number_of_rec_cols;j++)
+        {
+            points_number[i][j]=0;
+        }
+    }
+    for(int i=0;i<input_vector.size();i++)
+    {   int x = input_vector[i].x/rec_width;
+        int y = input_vector[i].y/rec_height;
+        points_number[x][y]++;
+    }
+
+
+
+    int max_index = 0;
+    int find_flag = 0;
+    //pierwszy rzad
+
+    for(int r=number_of_rec_raws-1;r>0;r--)
+    {
+        int max = 0;
+
+        //szukaj rzad po rzedzie
+        if(find_flag == 0)
+        {
+            for(int c=0;c<number_of_rec_cols;c++)
+            {
+                if(points_number[r][c]>max)
+                {
+                    max = points_number[r][c];
+                    max_index = c;
+                }
+            }
+            if(max>0)
+            {
+                find_flag=1; //znaleziony 1 kwadrat
+                Point2i pkt = Point2i(max_index*rec_width+0.5*rec_width,r*rec_height+0.5*rec_height);
+                spl_points.push_back(pkt); //pushuj środek kwadratu
+            }
+        }
+        else //szukaj tylko w okolicy
+        {
+            for(int c=max_index - param;c<max_index + param;c++)
+            {
+                if(points_number[r][c]>max)
+                {
+                    max = points_number[r][c];
+                    max_index =c;
+                }
+            }
+            spl_points.push_back(Point2i(max_index*rec_width+0.5*rec_width,r*rec_height+0.5*rec_height)); //pushuj środek kwadratu
+
+        }
+
+    }
+    int ssz = spl_points.size();
+    //warunek co najmniej 3 punktow
+    if(ssz>2)
+    {
+        vector<Point2i> spline_set;
+
+        //minimalna liczba punktow
+        if(ssz<6)
+        {
+
+        spline_set.push_back(spl_points[0]);//pierwszy punkt
+        spline_set.push_back(spl_points[1]);//drugi punkt
+        spline_set.push_back(spl_points[ssz]);//ostatni punkt
+
+        }
+
+        //jezeli wiecej punktow to wez wiecej do spline
+        else
+        {
+            spline_set.push_back(spl_points[0]);//pierwszy punkt
+            for(int i =2;i<ssz/2;i++)
+                spline_set.push_back(spl_points[i]);
+            spline_set.push_back(spl_points[ssz]);//ostatni punkt
+        }
+
+        spl.set_spline(spline_set);
+    }
+
+    else//nie wykryto
+    {
+
+    }
+
+}
