@@ -236,7 +236,19 @@ void SharedMemory::pull_scene_data()
     std::cout << "Stop vis:  " << shared_variable[4] << std::endl;
     std::cout << "Stop dist: " << shared_variable[5] << std::endl;
 }
+void SharedMemory::push_signal(uint32_t signal)
+{
+    uint32_t tmp[1] = {signal};
 
+    // Copy data to shm
+    memcpy(shared_variable, tmp, 4);
+}
+bool SharedMemory::pull_signal()
+{
+    if(shared_variable[0])
+        return true;
+    return false;
+}
 void SharedMemory::close()
 {
     std::string command = "ipcrm -M ";

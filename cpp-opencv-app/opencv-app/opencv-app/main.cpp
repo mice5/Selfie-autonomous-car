@@ -55,6 +55,7 @@ SharedMemory shm_lidar_data(50001);
 SharedMemory shm_lane_points(50002);
 SharedMemory shm_usb_to_send(50003);
 SharedMemory shm_watchdog(50004);
+SharedMemory shm_dataready(50005,4);
 
 cv::Mat frame_ref(CAM_RES_Y, CAM_RES_X, CV_8UC1);
 void update_trackbar(int, void*)
@@ -137,6 +138,7 @@ int main()
     shm_lane_points.init();
     shm_usb_to_send.init();
     shm_watchdog.init();
+    shm_dataready.init();
 
     static int denom = 0;
 
@@ -270,6 +272,10 @@ int main()
 
         // Push data
         shm_usb_to_send.push_scene_data(reset_stm, red_light_visible, green_light_visible, stop_line_detected, stop_line_distance);
+
+        // Data ready
+        shm_dataready.push_signal(1u);
+
         STOP_TIMER("SHMEM")
         START_TIMER
 
@@ -290,7 +296,7 @@ int main()
             //cv::imshow("BirdEyeTtransform", bird_eye_frame_tr);
             cv::imshow("3.1 Yellow Bird Eye", yellow_bird_eye_frame);
 //            cv::imshow("3.2 White Bird Eye", white_bird_eye_frame);
-            //     cv::imshow("4.1 Yellow Vector", yellow_vector_frame);
+                 cv::imshow("4.1 Yellow Vector", yellow_vector_frame);
             //     cv::imshow("4.2 White Vector", white_vector_frame);
             //     cv::imshow("5 Cone Detect", cone_frame_out);
             //cv::imshow("Hist frame", hist_frame);
@@ -385,6 +391,7 @@ STOP_TIMER("imshows")
     shm_lane_points.close();
     shm_usb_to_send.close();
     shm_watchdog.close();
+    shm_dataready.close();
 
     return 0;
 }

@@ -25,6 +25,8 @@ public:
     void pull_lane_data(cv::Mat &test);
     void push_scene_data(bool reset_stm, bool red_light_visible, bool green_light_visible, bool stop_line_detected, uint32_t stop_line_distance);
     void pull_scene_data();
+    void push_signal(uint32_t signal);
+    bool pull_signal();
     void close();
 };
 
