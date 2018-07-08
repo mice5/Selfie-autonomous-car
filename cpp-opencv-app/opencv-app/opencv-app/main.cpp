@@ -32,23 +32,18 @@
 // Race mode ---> fps boost
 // Debug mode --> display data
 //#define RACE_MODE
+#define IMSHOW_RATE 1
 //#define DEBUG_MODE
-#define PREVIEW_MODE
+//#define PREVIEW_MODE
 #define NO_USB
 //#define STOPLIGHTS_MODE
 #define IDS_MODE
 
-//#define MARCZUK_MODE
 
 #define CAMERA_INDEX 0
 
-#ifdef IDS_MODE
 #define CAM_RES_X IDS_WIDTH
 #define CAM_RES_Y IDS_HEIGHT
-#else
-#define CAM_RES_X 752//640
-#define CAM_RES_Y 400
-#endif
 
 #define FRAME_TIME 10
 
@@ -72,62 +67,17 @@ std::mutex mu;
 
 cv :: Mat rect;
 
-#ifdef MARCZUK_MODE
-void CallBackFunc(int event, int x, int y, int flags, void* userdata)
-{
-     if  ( event == cv::EVENT_LBUTTONDOWN )
-     {
-          std::cout << "Left button of the mouse is clicked - position (" << x << ", " << y << ")" << std::endl;
-          int h_sum = 0;
-          int s_sum = 0;
-          int v_sum = 0;
-          int pomx = x;
-          int pomy = y;
-          for(int i=0;i<10;i++)
-          {  x=pomx-5+i;
-              for(int j=0;j<10;j++)
-              {
-                  y=pomy-5+j;
-                  h_sum += int(ids_test.at<cv::Vec3b>(cv::Point(x, y))[0]);
-                  s_sum += int(ids_test.at<cv::Vec3b>(cv::Point(x, y))[1]);
-                  v_sum += int(ids_test.at<cv::Vec3b>(cv::Point(x, y))[2]);
-
-              }
-
-          }
-
-          int h_avg = h_sum/100;
-          int s_avg = s_sum/100;
-          int v_avg = v_sum/100;
-
-          std::cout<<" H "<<h_avg<<std::endl;
-          std::cout<<" S "<<s_avg<<std::endl;
-          std::cout<<" V "<<v_avg<<std::endl;
-
-          cv::rectangle(ids_test,cv::Point(pomx-5,pomy-5),cv::Point(pomx+5,pomy+5),cv::Scalar(h_avg,s_avg,v_avg));
-          imshow("rect",ids_test);
-
-          cv::waitKey(500);
-
-     }
-
-}
-#endif
-
 int main()
 {
 //    sounds_init();
     laneDetector.CreateTrackbars();
     INIT_TIMER
     INIT_TIMER2
-//#ifdef DEBUG_MODE
-    //FPS
+
     struct timespec start, end;
     unsigned int licznik_czas = 0;
     float seconds = 0;
     float fps = 0;
-
-//#endif
 
     // Declaration of cv::MAT variables
     cv::Mat frame(CAM_RES_Y, CAM_RES_X, CV_8UC4);
@@ -165,36 +115,8 @@ int main()
     std::vector<std::vector<cv::Point>> yellow_vector;
     std::vector<std::vector<cv::Point>> white_vector;
 
-#ifdef IDS_MODE
-//    cvNamedWindow("frame_ids",1);
+
     ids.init();
-#endif
-
-#ifndef IDS_MODE
-    // Camera init
-    cv::VideoCapture camera;
-    camera.open(CAMERA_INDEX, cv::CAP_V4L2);
-
-    // Check if camera is opened propely
-    if (!camera.isOpened())
-    {
-        std::cout << "Error could not open camera on port: " << CAMERA_INDEX << std::endl
-                  << "Closing app!" << std::endl;
-
-        camera.release();
-        return 0;
-    }
-    else
-    {
-        // Set resolution
-        camera.set(cv::CAP_PROP_FRAME_WIDTH, CAM_RES_X);
-        camera.set(cv::CAP_PROP_FRAME_HEIGHT, CAM_RES_Y);
-
-        //Set and check decoding of frames
-        camera.set(cv::CAP_PROP_CONVERT_RGB, true);
-        std::cout << "RGB: " << camera.get(cv::CAP_PROP_CONVERT_RGB) << std::endl;
-    }
-#endif
 
     //Read XML file
     laneDetector.UndistXML(cameraMatrix, distCoeffs);
@@ -216,21 +138,6 @@ int main()
     shm_usb_to_send.init();
     shm_watchdog.init();
 
-    //Trackbars
-    //
-
-
-    //Read from file
-//    cv::Mat frame_gray(CAM_RES_Y, CAM_RES_X, CV_8UC1);
-//    frame_gray = cv::imread("../../data/SELFIE-example-img-prosto.png", CV_LOAD_IMAGE_GRAYSCALE);
-
-//    if(!frame_gray.data)
-//    {
-//        std::cout << "No data!" << std::endl
-//                  << "Closing app!" << std::endl;
-
-//        return 0;
-//    }
     static int denom = 0;
 
 #ifdef STOPLIGHTS_MODE
@@ -239,14 +146,10 @@ int main()
     cv::namedWindow("ROI",1);
 
     for(int i = 0; i < 15; i++){
-#ifndef IDS_MODE
-            camera >> frame;
-#else
         pthread_cond_wait(&algorithm_signal, &algorithm_signal_mutex);
         pthread_mutex_lock(&ids.frame_mutex);
         ids.ids_frame.copyTo(frame);
         pthread_mutex_unlock(&ids.frame_mutex);
-#endif
         lightDetector.prepare_first_image(frame,old_frame,lightDetector.roi_number);
     }
 
@@ -255,17 +158,14 @@ int main()
         {
             clock_gettime(CLOCK_MONOTONIC, &start);
         }
-#ifndef IDS_MODE
-        camera >> frame;
-#else
         pthread_cond_wait(&algorithm_signal, &algorithm_signal_mutex);
         pthread_mutex_lock(&ids.frame_mutex);
         ids.ids_frame.copyTo(frame);
         pthread_mutex_unlock(&ids.frame_mutex);
-#endif
+
 #ifdef DEBUG_MODE
         lightDetector.test_roi(frame,display);
-#endif
+#endif //DEBUG_MODE
         lightDetector.find_start(frame,diffrence,old_frame,lightDetector.roi_number);
 
 #ifdef DEBUG_MODE
@@ -278,7 +178,7 @@ int main()
 
         }
         cv::waitKey(1);
-#endif
+#endif //DEBUG_MODE
 
         if (lightDetector.start_light == true)
         {
@@ -304,7 +204,7 @@ int main()
         }
     }
 
-#endif
+#endif //STOPLIGHTS_MODE
 
 // Main loop
 
@@ -321,7 +221,6 @@ int main()
     while(true)
     {
         pthread_cond_wait(&algorithm_signal, &algorithm_signal_mutex);
-//#ifdef DEBUG_MODE
         //FPS
         if(licznik_czas == 0)
         {
@@ -329,47 +228,26 @@ int main()
             clock_gettime(CLOCK_MONOTONIC, &start);
         }
         //FPS
-//#endif
-START_TIMER
+        START_TIMER
         // Get new frame from camera
-
-#ifndef IDS_MODE
-        camera >> frame;
-#endif
-
-#ifdef IDS_MODE
-        //ids.update_params();
 
         pthread_mutex_lock(&ids.frame_mutex);
         ids.ids_frame.copyTo(ids_image);
-//        ids.ids_frame.copyTo(undist_frame);
         pthread_mutex_unlock(&ids.frame_mutex);
-#endif
-STOP_TIMER("Copying from Camera")
-START_TIMER
+        STOP_TIMER("Copying from Camera")
+        START_TIMER
         // Process frame
-#ifndef IDS_MODE
-        laneDetector.Undist(frame, undist_frame, cameraMatrix, distCoeffs);
-#endif
-#ifdef IDS_MODE
 //        laneDetector.Undist(ids_image, undist_frame, cameraMatrix, distCoeffs);
 //        STOP_TIMER("Distort")
 //        START_TIMER
-#endif
 
         laneDetector.bird_eye(ids_image, undist_frame);
+        STOP_TIMER("BIRD EYE")
+        START_TIMER
         cv::cvtColor(undist_frame, HSV_frame, cv::COLOR_BGR2HSV);
         laneDetector.Hsv_both(HSV_frame, frame_out_yellow, frame_out_white, frame_out_edge_yellow, frame_out_edge_white);
         STOP_TIMER("HSV")
         START_TIMER
-        //laneDetector.BirdEye(frame_out_edge_yellow, yellow_bird_eye_frame);
-        //laneDetector.BirdEye(frame_out_edge_white, white_bird_eye_frame);
-//        laneDetector.bird_eye(frame_out_edge_white, white_bird_eye_frame);
-//        laneDetector.bird_eye(frame_out_edge_yellow, yellow_bird_eye_frame);
-        STOP_TIMER("BIRD EYE")
-        START_TIMER
-        //laneDetector.colorTransform(yellow_bird_eye_frame, yellow_bird_eye_frame_tr);
-        //laneDetector.colorTransform(white_bird_eye_frame, white_bird_eye_frame_tr);
 
         // Detect cones
 //        laneDetector.ConeDetection(frame_ids, cone_frame_out, laneDetector.cones_vector);
@@ -378,46 +256,33 @@ START_TIMER
         laneDetector.detectLine_both(frame_out_edge_white, white_vector,frame_out_edge_yellow, yellow_vector);
         STOP_TIMER("Detect lines")
         START_TIMER
-        //laneDetector.detectLine(yellow_bird_eye_frame, yellow_vector);
-        //laneDetector.detectLine(white_bird_eye_frame, white_vector);
+
        laneDetector.drawPoints_both(white_vector, white_vector_frame,yellow_vector, yellow_vector_frame);
         STOP_TIMER("Draw points")
         START_TIMER
-        //laneDetector.drawPoints(yellow_vector, yellow_vector_frame);
-       // laneDetector.drawPoints(white_vector, white_vector_frame);
 
         // Stop line
-//        laneDetector.StopLine(ids_image, hist_frame, hsv_frame, stop_line_detected);
         laneDetector.StopLine_v2(HSV_frame, hsv_frame, stop_line_detected);
-        STOP_TIMER("STOP LINE AGAIN")
+        STOP_TIMER("STOP LINE")
         START_TIMER
         // Push data
         shm_lane_points.push_lane_data(yellow_vector, white_vector, laneDetector.cones_vector);
-        // Test pull
-        //shm_lane_points.pull_lane_data(test-lane);
 
         // Push data
         shm_usb_to_send.push_scene_data(reset_stm, red_light_visible, green_light_visible, stop_line_detected, stop_line_distance);
         STOP_TIMER("SHMEM")
         START_TIMER
-        // Test pull
-        // shm_usb_to_send.pull_scene_data();
 
 
 #ifdef DEBUG_MODE
-        if(++denom >= 1){
+        if(++denom >= IMSHOW_RATE){
             denom = 0;
             // Display info on screen
             //cv::imshow("Camera", frame);
             //cv::imshow("UndsCamera", undist_frame);
-#ifdef IDS_MODE
             cv::imshow("0 Frame", ids_image);
             //cv::imshow("Hist frame", hist_frame);
 //            cv::imshow("Hsv frame", hsv_frame);
-#endif
-#ifndef IDS_MODE
-            cv::imshow("0 Frame",frame);
-#endif
             cv::imshow("1.1 Yellow Line", frame_out_yellow);
 //            cv::imshow("1.2 White Line", frame_out_white);
 //            cv::imshow("2.1 Yellow Edges", frame_out_edge_yellow);
@@ -484,12 +349,15 @@ START_TIMER
         }
 #endif
 #ifdef PREVIEW_MODE
-        cv::imshow("0 Frame", ids_image);
-//        cv::imshow("0.5 Frame", undist_frame);
-//        cv::imshow("1.1 Yellow Line", frame_out_yellow);
-//        cv::imshow("4.1 Yellow Vector", yellow_vector_frame);
-        cv::waitKey(1);
+        if(++denom >= IMSHOW_RATE){
+            denom = 0;
+            //cv::imshow("0 Frame", ids_image);
+            cv::imshow("1.1 Yellow Line", frame_out_yellow);
+            //cv::imshow("4.1 Yellow Vector", yellow_vector_frame);
+            cv::waitKey(1);
+        }
 #endif //PREVIEW_MODE
+
         if(licznik_czas > 200)
         {
 
@@ -510,13 +378,8 @@ STOP_TIMER("imshows")
     }
 
     close_app = true;
-#ifndef IDS_MODE
-    camera.release();
-#endif
 
-#ifdef IDS_MODE
     ids.exit();
-#endif
 
     shm_lidar_data.close();
     shm_lane_points.close();
