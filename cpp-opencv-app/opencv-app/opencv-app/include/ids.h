@@ -10,8 +10,8 @@
 #include <pthread.h>
 
 #define IDS_WIDTH 752
-#define IDS_HEIGHT 400
-#define IMAGE_COUNT 87
+#define IDS_HEIGHT 360
+#define IMAGE_COUNT 20
 
 class IDS {
 
@@ -49,11 +49,11 @@ public:
     cv::Mat ids_frame = cv::Mat(IDS_HEIGHT, IDS_WIDTH, CV_8UC3);
     pthread_mutex_t frame_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-    UINT PixelClock = 35;
+    UINT PixelClock = 25;
     int pixelclock_slider = 40;
     double Exposure = 10.0;
     int exposure_slider = 100;
-    double FPS = 76, NEWFPS;
+    double FPS = 80, NEWFPS;
     int fps_slider = 82;
 
     int Master_GAIN_Factor;//=300;
@@ -89,4 +89,6 @@ public:
 extern IDS ids;
 extern pthread_cond_t algorithm_signal;
 extern pthread_mutex_t algorithm_signal_mutex;
+
+extern void sounds_init();
 #endif

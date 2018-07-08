@@ -1,5 +1,21 @@
 #include "lanedetector.hpp"
 
+//#define LANETIMING
+
+#ifdef LANETIMING
+#include <chrono>
+#define INIT_LANETIMER static auto startlane = std::chrono::high_resolution_clock::now();
+#define START_LANETIMER  startlane = std::chrono::high_resolution_clock::now();
+#define STOP_LANETIMER(name)  std::cout << "RUNTIME of " << name << ": " << \
+    std::chrono::duration_cast<std::chrono::microseconds>( \
+            std::chrono::high_resolution_clock::now()-startlane \
+    ).count() << " us " << std::endl;
+#else
+#define INIT_LANETIMER
+#define START_LANETIMER
+#define STOP_LANETIMER(name)
+#endif
+
 static const int H_slider_max = 360;
 static const int S_slider_max = 255;
 static const int V_slider_max = 255;
@@ -21,15 +37,14 @@ static int Acc_filt_slider = 8;
 static int R_down = 89, G_down = 0, B_down = 0;
 static int R_up = 112, G_up = 255, B_up = 255;
 
-static int H_down = 66, S_down = 51, V_down = 0;
-static int H_up = 124, S_up = 105, V_up = 51;
+static int H_down = 0, S_down = 162, V_down = 0;
+static int H_up = 40, S_up = 255, V_up = 255;
 
 static int H_down_white = 48, S_down_white = 104, V_down_white = 94;
 static int H_up_white = 143, S_up_white = 207, V_up_white = 183;
 
 LaneDetector::LaneDetector()
 {
-
 }
 
 void LaneDetector::applyBlur(cv::Mat &input, cv::Mat &output)
@@ -197,8 +212,7 @@ void LaneDetector::Hsv_both(cv::Mat &frame_in, cv::Mat &yellow_frame_out, cv::Ma
         kernel_v.at<float>(0, 0) = -1;
         kernel_v.at<float>(0, 1) = 0;
         kernel_v.at<float>(0, 2) = 1;
-        //cvtColor(frame_in, frame_in, cv::COLOR_BGR2RGB);
-        cvtColor(frame_in, imageHSV, cv::COLOR_BGR2HSV);
+        //cvtColor(frame_in, imageHSV, cv::COLOR_BGR2HSV);
 
         inRange(frame_in,cv::Scalar(H_down_white, S_down_white, V_down_white),cv::Scalar(H_up_white, S_up_white, V_up_white),white_frame_out);
         inRange(frame_in,cv::Scalar(H_down, S_down, V_down),cv::Scalar(H_up, S_up, V_up),yellow_frame_out);
@@ -263,24 +277,29 @@ void LaneDetector::detectLine_both(cv::Mat &input_white, std::vector<std::vector
     {
         cv::approxPolyDP(cv::Mat(output_yellow[i]),output_yellow[i], Acc_value, false);
     }
+//    std::cout<<"Punkty:"<<output_yellow.size()<<std::endl;
 }
 
 void LaneDetector::drawPoints(std::vector<std::vector<cv::Point>> &input, cv::Mat &output)
 {
+    cv::Mat frame_draw = cv::Mat(output.size(), CV_8UC3);
     for (int i = 0; i < input.size(); i++)
     {
         for (unsigned int j = 0; j < input[i].size(); j++)
         {
-            cv::circle(output, input[i][j], 3, cv::Scalar(0, 255, 255), CV_FILLED, cv::LINE_AA);
+            cv::circle(frame_draw, input[i][j], 3, cv::Scalar(0, 255, 255), CV_FILLED, cv::LINE_AA);
 
             if (j>0)
-                cv::line(output, cv::Point(input[i][j - 1]), cv::Point(input[i][j]), cv::Scalar(0, 0, 255), 2);
+                cv::line(frame_draw, cv::Point(input[i][j - 1]), cv::Point(input[i][j]), cv::Scalar(0, 0, 255), 2);
         }
     }
+    frame_draw.copyTo(output);
 }
 
 void LaneDetector::drawPoints_both(std::vector<std::vector<cv::Point>> &input_white, cv::Mat &output_white,std::vector<std::vector<cv::Point>> &input_yellow, cv::Mat &output_yellow)
 {
+    output_white = cv::Mat::zeros(output_white.size(), CV_8UC3);
+    output_yellow = cv::Mat::zeros(output_yellow.size(), CV_8UC3);
     for (int i = 0; i < input_white.size(); i++)
     {
         for (unsigned int j = 0; j < input_white[i].size(); j++)
@@ -405,6 +424,8 @@ void LaneDetector::ConeDetection_new(cv::Mat frame_in, cv::Mat &frame_out, std::
 
 void LaneDetector::StopLine(cv::Mat frame_in, cv::Mat &hist_frame, cv::Mat &hsv_frame, bool &flag)
 {
+    INIT_LANETIMER
+    START_LANETIMER
     cv::Mat imageHSV;
 
     cv::Mat mag_Line_frame;
@@ -414,22 +435,29 @@ void LaneDetector::StopLine(cv::Mat frame_in, cv::Mat &hist_frame, cv::Mat &hsv_
     cvtColor(frame_in, imageHSV, cv::COLOR_BGR2HSV);
     hsv_frame = imageHSV;
 
-    cv::Scalar mag_minHSV = cv::Scalar(35, 0, 0);
-    cv::Scalar mag_maxHSV = cv::Scalar(60, 100, 255);
+    cv::Scalar mag_minHSV = cv::Scalar(50, 0, 0);
+    cv::Scalar mag_maxHSV = cv::Scalar(80, 100, 255);
 
     cv::Mat mag_maskHSV, mag_resultHSV;
-
+    STOP_LANETIMER("Zmienne")
+    START_LANETIMER
     inRange(frame_in, mag_minHSV, mag_maxHSV, mag_maskHSV);
+    STOP_LANETIMER("inrange")
+    START_LANETIMER
     bitwise_and(imageHSV, imageHSV, mag_resultHSV, mag_maskHSV);
+    STOP_LANETIMER("bitwise")
+    START_LANETIMER
     medianBlur(mag_resultHSV, mag_resultHSV, 5);
+    STOP_LANETIMER("blur")
+    START_LANETIMER
 
     cv::Mat mask = cv::Mat::zeros(cv::Size(mag_resultHSV.cols, mag_resultHSV.rows), CV_8UC1);
     cv::Point points[4] =
     {
-        cv::Point(mag_resultHSV.cols, mag_resultHSV.rows),
-        cv::Point(0, mag_resultHSV.rows),
-        cv::Point(60, mag_resultHSV.rows / 2),
-        cv::Point(mag_resultHSV.cols - 60, mag_resultHSV.rows / 2)
+        cv::Point(280, 0),
+        cv::Point(mag_resultHSV.cols - 280, 0),
+        cv::Point(mag_resultHSV.cols - 280, mag_resultHSV.rows),
+        cv::Point(280, mag_resultHSV.rows)
     };
 
     cv::fillConvexPoly(mask, points, 4, cv::Scalar(255, 0, 0));
@@ -437,10 +465,13 @@ void LaneDetector::StopLine(cv::Mat frame_in, cv::Mat &hist_frame, cv::Mat &hsv_
     cv::bitwise_and(mag_resultHSV, mag_resultHSV, mask_out, mask);
 
     hsv_frame = mask_out;
+    STOP_LANETIMER("maska")
+    START_LANETIMER
 
     std::vector<cv::Mat> bgr_planes;
-    split(mag_resultHSV, bgr_planes);
-
+    split(mask_out, bgr_planes);
+    STOP_LANETIMER("split")
+    START_LANETIMER
     int histSize = 256;
 
     float range[] = { 0, 256 };
@@ -451,8 +482,6 @@ void LaneDetector::StopLine(cv::Mat frame_in, cv::Mat &hist_frame, cv::Mat &hsv_
     cv::Mat b_hist, g_hist, r_hist;
 
     cv::calcHist(&bgr_planes[0], 1, 0, cv::Mat(), b_hist, 1, &histSize, &histRange, uniform, accumulate);
-    cv::calcHist(&bgr_planes[1], 1, 0, cv::Mat(), g_hist, 1, &histSize, &histRange, uniform, accumulate);
-    cv::calcHist(&bgr_planes[2], 1, 0, cv::Mat(), r_hist, 1, &histSize, &histRange, uniform, accumulate);
 
     int hist_w = 512; int hist_h = 400;
     int bin_w = cvRound((double)hist_w / histSize);
@@ -460,8 +489,6 @@ void LaneDetector::StopLine(cv::Mat frame_in, cv::Mat &hist_frame, cv::Mat &hsv_
     cv::Mat histImage(hist_h, hist_w, CV_8UC3, cv::Scalar(0, 0, 0));
 
     cv::normalize(b_hist, b_hist, 0, histImage.rows, cv::NORM_MINMAX, -1, cv::Mat());
-    cv::normalize(g_hist, g_hist, 0, histImage.rows, cv::NORM_MINMAX, -1, cv::Mat());
-    cv::normalize(r_hist, r_hist, 0, histImage.rows, cv::NORM_MINMAX, -1, cv::Mat());
 
     std::vector<cv::Point> b_p_vec;
 
@@ -471,15 +498,10 @@ void LaneDetector::StopLine(cv::Mat frame_in, cv::Mat &hist_frame, cv::Mat &hsv_
             cv::Point(bin_w*(i), hist_h - cvRound(b_hist.at<float>(i))),
             cv::Scalar(255, 0, 0), 2, 8, 0);
         b_p_vec.push_back(cv::Point(bin_w*(i - 1), hist_h - cvRound(b_hist.at<float>(i - 1))));
-        cv::line(histImage, cv::Point(bin_w*(i - 1), hist_h - cvRound(g_hist.at<float>(i - 1))),
-            cv::Point(bin_w*(i), hist_h - cvRound(g_hist.at<float>(i))),
-            cv::Scalar(0, 255, 0), 2, 8, 0);
-        cv::line(histImage, cv::Point(bin_w*(i - 1), hist_h - cvRound(r_hist.at<float>(i - 1))),
-            cv::Point(bin_w*(i), hist_h - cvRound(r_hist.at<float>(i))),
-            cv::Scalar(0, 0, 255), 2, 8, 0);
     }
     hist_frame = histImage;
-
+    STOP_LANETIMER("histogram")
+    START_LANETIMER
     int tmp_maxh = hist_h;
     int tmp_imaxh = 0;
     for (int i = 0; i < histSize; i++)
@@ -494,11 +516,61 @@ void LaneDetector::StopLine(cv::Mat frame_in, cv::Mat &hist_frame, cv::Mat &hsv_
     if (tmp_imaxh > 150 && tmp_imaxh < 175)
     {
         flag = true;
-        std::cout << "STOP" << std::endl;
+//        std::cout << "STOP" << std::endl;
     }
     else
     {
         flag = false;
     }
+    STOP_LANETIMER("reszta")
 }
 
+ void LaneDetector::StopLine_v2(cv::Mat frame_in, cv::Mat &hsv_frame, bool &flag)
+ {
+     INIT_LANETIMER
+     START_LANETIMER
+     cv::Mat imageHSV;
+     cv::Scalar white_pix;
+
+     cv::Scalar mag_minHSV = cv::Scalar(50, 0, 0);
+     cv::Scalar mag_maxHSV = cv::Scalar(80, 100, 255);
+
+     cv::Mat mag_maskHSV, mag_resultHSV;
+     STOP_LANETIMER("Zmienne")
+     START_LANETIMER
+     //cvtColor(frame_in, imageHSV, cv::COLOR_BGR2HSV);
+     STOP_LANETIMER("cvtcolor")
+     START_LANETIMER
+     inRange(frame_in, mag_minHSV, mag_maxHSV, mag_maskHSV);
+     STOP_LANETIMER("inrange")
+     START_LANETIMER
+     bitwise_and(frame_in, frame_in, mag_resultHSV, mag_maskHSV);
+     STOP_LANETIMER("bitwise&")
+     START_LANETIMER
+     medianBlur(mag_resultHSV, mag_resultHSV, 5);
+     STOP_LANETIMER("medianblur")
+     START_LANETIMER
+
+     cv::Mat mask = cv::Mat::zeros(cv::Size(mag_resultHSV.cols, mag_resultHSV.rows), CV_8UC1);
+     cv::Point points[4] =
+     {
+         cv::Point(280, 0),
+         cv::Point(mag_resultHSV.cols - 280, 0),
+         cv::Point(mag_resultHSV.cols - 280, mag_resultHSV.rows),
+         cv::Point(280, mag_resultHSV.rows)
+     };
+     cv::fillConvexPoly(mask, points, 4, cv::Scalar(255, 0, 0));
+     cv::Mat mask_out;
+     cv::bitwise_and(mag_maskHSV, mag_maskHSV, mask_out, mask);
+
+     white_pix = cv::mean(mask_out);
+
+     if(white_pix[0] > 1.5)
+     {
+         flag = true;
+//         std::cout << "STOP" << std::endl;
+     }
+     hsv_frame = mask_out;
+     STOP_LANETIMER("maska")
+     START_LANETIMER
+ }

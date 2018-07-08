@@ -40,7 +40,7 @@ void IDS::initialize_camera() {
     }
 
     // Setting the pixels clock
-    UINT nPixelClockDefault = 21;
+    UINT nPixelClockDefault = 25;
     nRet = is_PixelClock(m_hCamera, IS_PIXELCLOCK_CMD_SET, (void*)&PixelClock, sizeof(PixelClock));
 
     if (nRet == IS_SUCCESS) {
@@ -106,6 +106,7 @@ void IDS::initialize_camera() {
     } else {
         std::cout << "Error in allocating memory" << std::endl;
     }
+    is_EnableAutoExit(m_hCamera, IS_ENABLE_AUTO_EXIT);
 }
 // Capture a frame from IDS
 void IDS::setAlgorithmReady(){
@@ -300,42 +301,47 @@ void IDS::update_params() {
 void IDS::setting_auto_params() {
     double enable = 1;
     double disable = 0;
+    double exposure_max = 0;
     is_SetAutoParameter(m_hCamera, IS_SET_ENABLE_AUTO_GAIN, &enable, 0);
     is_SetAutoParameter(m_hCamera, IS_SET_ENABLE_AUTO_WHITEBALANCE, &enable, 0);
-    is_SetAutoParameter(m_hCamera, IS_SET_ENABLE_AUTO_FRAMERATE, &enable, 0);
+    is_SetAutoParameter(m_hCamera, IS_SET_ENABLE_AUTO_FRAMERATE, &disable, 0);
     is_SetAutoParameter(m_hCamera, IS_SET_ENABLE_AUTO_SHUTTER, &enable, 0);
     is_SetAutoParameter(m_hCamera, IS_SET_ENABLE_AUTO_SENSOR_GAIN, &enable, 0);
     is_SetAutoParameter(m_hCamera, IS_SET_ENABLE_AUTO_SENSOR_WHITEBALANCE, &enable, 0);
     is_SetAutoParameter(m_hCamera, IS_SET_ENABLE_AUTO_SENSOR_SHUTTER, &enable, 0);
+    is_SetAutoParameter(m_hCamera, IS_SET_ENABLE_AUTO_SENSOR_GAIN_SHUTTER, &enable, 0);
+    is_SetAutoParameter(m_hCamera, IS_SET_AUTO_SHUTTER_MAX, &exposure_max, 0);
+
+
 }
 
 //Changing camera setting and gettign default variables
 void IDS::change_params() {
-    is_Exposure(m_hCamera, IS_EXPOSURE_CMD_SET_EXPOSURE, (void*)&Exposure, sizeof(Exposure));
+//    is_Exposure(m_hCamera, IS_EXPOSURE_CMD_SET_EXPOSURE, (void*)&Exposure, sizeof(Exposure));
 
     is_SetFrameRate(m_hCamera, FPS, &NEWFPS);
 
     // Enable setting gain boost
-    int nRet = is_SetGainBoost(m_hCamera, IS_SET_GAINBOOST_ON);
-    if (nRet == IS_SUCCESS) {
-        std::cout << "Enabling Gain success" << std::endl;
-    }
+//    int nRet = is_SetGainBoost(m_hCamera, IS_SET_GAINBOOST_ON);
+//    if (nRet == IS_SUCCESS) {
+//        std::cout << "Enabling Gain success" << std::endl;
+//    }
     //Get gain factors
     Master_GAIN_Factor = is_SetHWGainFactor(m_hCamera, IS_GET_DEFAULT_MASTER_GAIN_FACTOR,100);
     Red_GAIN_Factor = is_SetHWGainFactor(m_hCamera, IS_GET_DEFAULT_RED_GAIN_FACTOR, 100);
     Green_GAIN_Factor = is_SetHWGainFactor(m_hCamera, IS_GET_DEFAULT_GREEN_GAIN_FACTOR, 100);
     Blue_GAIN_Factor = is_SetHWGainFactor(m_hCamera, IS_GET_DEFAULT_BLUE_GAIN_FACTOR, 100);
 
-    nRet = is_EdgeEnhancement(m_hCamera, IS_EDGE_ENHANCEMENT_CMD_GET_DEFAULT, &Sharpness, sizeof(Sharpness));
+    int nRet = is_EdgeEnhancement(m_hCamera, IS_EDGE_ENHANCEMENT_CMD_GET_DEFAULT, &Sharpness, sizeof(Sharpness));
     if (nRet == IS_SUCCESS) {
         std::cout << "Edge enhancement default success" << std::endl;
     }
     sharpness_slider = (UINT)Sharpness;
 
-    //nRet = is_Gamma(m_hCamera, IS_GAMMA_CMD_GET_DEFAULT, &Gamma, sizeof(Gamma));
-    //if (nRet == IS_SUCCESS) {
-    //	std::cout << "Gamma default success" << std::endl;
-    //}
+//    nRet = is_Gamma(m_hCamera, IS_GAMMA_CMD_GET_DEFAULT, &Gamma, sizeof(Gamma));
+//    if (nRet == IS_SUCCESS) {
+//        std::cout << "Gamma default success" << std::endl;
+//    }
 
 }
 
