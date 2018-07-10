@@ -160,10 +160,7 @@ int main()
         {
             clock_gettime(CLOCK_MONOTONIC, &start);
         }
-        pthread_cond_wait(&algorithm_signal, &algorithm_signal_mutex);
-        pthread_mutex_lock(&ids.frame_mutex);
-        ids.ids_frame.copyTo(frame);
-        pthread_mutex_unlock(&ids.frame_mutex);
+        ids.get_frame_to(frame);
 
 #ifdef DEBUG_MODE
         lightDetector.test_roi(frame,display);
