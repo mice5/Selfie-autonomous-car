@@ -162,11 +162,11 @@ while(1)
     {
         y_line_detect = 1;
 
-        points_to_mat(y_mat,y_point_vector);
+//        points_to_mat(y_mat,y_point_vector);
         STOP_TIMER("points_to_mat")
         START_TIMER
-        rectangle_optimize(y_mat,y_spline);
-//        optimization(y_point_vector,y_spline);
+//        rectangle_optimize(y_mat,y_spline);
+        new_optimization(y_point_vector,y_spline);
         STOP_TIMER("rectangle_optimize")
         START_TIMER
     }
@@ -174,11 +174,11 @@ while(1)
     {
         w_line_detect = 1;
 
-        points_to_mat(w_mat,w_point_vector);
+//        points_to_mat(w_mat,w_point_vector);
         STOP_TIMER("points_to_mat")
         START_TIMER
-        rectangle_optimize(w_mat,w_spline);
-//        optimization(w_point_vector,w_spline);
+//        rectangle_optimize(w_mat,w_spline);
+        new_optimization(w_point_vector,w_spline);
         STOP_TIMER("rectangle_optimize")
         START_TIMER
     }
