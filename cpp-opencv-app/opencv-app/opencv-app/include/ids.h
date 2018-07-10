@@ -50,11 +50,11 @@ public:
     pthread_mutex_t frame_mutex = PTHREAD_MUTEX_INITIALIZER;
 
     UINT PixelClock = 25;
-    int pixelclock_slider = 40;
-    double Exposure = 10.0;
-    int exposure_slider = 100;
-    double FPS = 80, NEWFPS;
-    int fps_slider = 82;
+    int pixelclock_slider = 25;
+    double Exposure = 0.5;
+    int exposure_slider = 15;
+    double FPS = 100, NEWFPS;
+    int fps_slider = 100;
 
     int Master_GAIN_Factor;//=300;
     int Red_GAIN_Factor;//=112;
@@ -65,7 +65,7 @@ public:
     int sharpness_slider=1;
     UINT Sharpness=1;
 
-    int Gamma =170;
+    int Gamma =100;
 
     char* pMem = NULL;
     int memID = 0;
@@ -73,7 +73,7 @@ public:
     void setAlgorithmReady();
 
     double getFPS();
-    uchar* get_frame();
+    void get_frame_to(cv::Mat &output);
     HIDS getCameraHID();
 
     void init();
@@ -91,4 +91,5 @@ extern pthread_cond_t algorithm_signal;
 extern pthread_mutex_t algorithm_signal_mutex;
 
 extern void sounds_init();
+void update_suwaki(int , void*);
 #endif

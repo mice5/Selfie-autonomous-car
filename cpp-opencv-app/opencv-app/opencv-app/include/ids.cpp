@@ -17,7 +17,7 @@ void IDS::init(){
     setting_auto_params();
     change_params();
     create_trackbars();
-
+    update_params();
     pthread_mutex_init(&algorithm_signal_mutex,NULL);
 
     int x = 0;
@@ -173,9 +173,12 @@ void IDS::ProcessFrame ()
         }
     }
 }
-uchar* IDS::get_frame() {
-///
-    return ids_frame.ptr();
+void IDS::get_frame_to(cv::Mat &output) {
+    pthread_cond_wait(&algorithm_signal, &algorithm_signal_mutex);
+
+    pthread_mutex_lock(&frame_mutex);
+    ids_frame.copyTo(output);
+    pthread_mutex_unlock(&frame_mutex);
 }
 HIDS IDS::getCameraHID(){
     return m_hCamera;
@@ -282,7 +285,7 @@ void IDS::update_params() {
     PixelClock = (UINT)pixelclock_slider;
     is_PixelClock(m_hCamera, IS_PIXELCLOCK_CMD_SET, (void*)&PixelClock, sizeof(PixelClock));
 
-    Exposure = (double)(exposure_slider/10);
+    Exposure = (double)(exposure_slider/30.);
     is_Exposure(m_hCamera, IS_EXPOSURE_CMD_SET_EXPOSURE, (void*)&Exposure, sizeof(Exposure));
 
     FPS = (double)fps_slider;
@@ -301,15 +304,15 @@ void IDS::update_params() {
 void IDS::setting_auto_params() {
     double enable = 1;
     double disable = 0;
-    double exposure_max = 0;
-    is_SetAutoParameter(m_hCamera, IS_SET_ENABLE_AUTO_GAIN, &enable, 0);
+    double exposure_max = 1.0;
+    is_SetAutoParameter(m_hCamera, IS_SET_ENABLE_AUTO_GAIN, &disable, 0);
     is_SetAutoParameter(m_hCamera, IS_SET_ENABLE_AUTO_WHITEBALANCE, &enable, 0);
     is_SetAutoParameter(m_hCamera, IS_SET_ENABLE_AUTO_FRAMERATE, &disable, 0);
-    is_SetAutoParameter(m_hCamera, IS_SET_ENABLE_AUTO_SHUTTER, &enable, 0);
-    is_SetAutoParameter(m_hCamera, IS_SET_ENABLE_AUTO_SENSOR_GAIN, &enable, 0);
+    is_SetAutoParameter(m_hCamera, IS_SET_ENABLE_AUTO_SHUTTER, &disable, 0);
+    is_SetAutoParameter(m_hCamera, IS_SET_ENABLE_AUTO_SENSOR_GAIN, &disable, 0);
     is_SetAutoParameter(m_hCamera, IS_SET_ENABLE_AUTO_SENSOR_WHITEBALANCE, &enable, 0);
-    is_SetAutoParameter(m_hCamera, IS_SET_ENABLE_AUTO_SENSOR_SHUTTER, &enable, 0);
-    is_SetAutoParameter(m_hCamera, IS_SET_ENABLE_AUTO_SENSOR_GAIN_SHUTTER, &enable, 0);
+    is_SetAutoParameter(m_hCamera, IS_SET_ENABLE_AUTO_SENSOR_SHUTTER, &disable, 0);
+    is_SetAutoParameter(m_hCamera, IS_SET_ENABLE_AUTO_SENSOR_GAIN_SHUTTER, &disable, 0);
     is_SetAutoParameter(m_hCamera, IS_SET_AUTO_SHUTTER_MAX, &exposure_max, 0);
 
 
@@ -345,21 +348,26 @@ void IDS::change_params() {
 
 }
 
+void update_suwaki(int,void*){
+    ids.update_params();
+}
+
 //Creating in debug mode trackbars
 void IDS::create_trackbars(void){
     cvNamedWindow("ids", 1);
-    cv::createTrackbar("Pixel", "ids", &pixelclock_slider, 40, NULL);
-    cv::createTrackbar("Exposure", "ids", &exposure_slider, 500, NULL);
-    cv::createTrackbar("FPS", "ids", &fps_slider, 87, NULL);
-    cv::createTrackbar("Master", "ids", &Master_GAIN_Factor, 300, NULL);
+    cv::createTrackbar("Pixel", "ids", &pixelclock_slider, 40, update_suwaki);
+    cv::createTrackbar("Exposure", "ids", &exposure_slider, 30*30, update_suwaki);
+    cv::createTrackbar("FPS", "ids", &fps_slider, 100, update_suwaki);
+    cv::createTrackbar("Master", "ids", &Master_GAIN_Factor, 300, update_suwaki);
     cv::setTrackbarMin("Master", "ids", 100);
-    cv::createTrackbar("Green", "ids", &Green_GAIN_Factor, 300, NULL);
+    cv::createTrackbar("Green", "ids", &Green_GAIN_Factor, 300, update_suwaki);
     cv::setTrackbarMin("Green", "ids",100);
-    cv::createTrackbar("Red", "ids", &Red_GAIN_Factor, 300, NULL);
+    cv::createTrackbar("Red", "ids", &Red_GAIN_Factor, 300, update_suwaki);
     cv::setTrackbarMin("Red", "ids", 100);
-    cv::createTrackbar("Blue", "ids", &Blue_GAIN_Factor, 300, NULL);
+    cv::createTrackbar("Blue", "ids", &Blue_GAIN_Factor, 300, update_suwaki);
     cv::setTrackbarMin("Blue", "ids", 100);
-    cv::createTrackbar("Sharpness", "ids", &sharpness_slider, 9, NULL);
+    cv::createTrackbar("Sharpness", "ids", &sharpness_slider, 9, update_suwaki);
     cv::setTrackbarMin("Sharpness", "ids", 0);
-    cv::createTrackbar("Gamma", "ids", &Gamma, 300, NULL);
+    cv::createTrackbar("Gamma", "ids", &Gamma, 300, update_suwaki);
 }
+

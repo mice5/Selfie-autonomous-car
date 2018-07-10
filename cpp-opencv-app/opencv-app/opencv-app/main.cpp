@@ -33,7 +33,7 @@
 // Debug mode --> display data
 //#define RACE_MODE
 #define IMSHOW_RATE 1
-//#define DEBUG_MODE
+#define DEBUG_MODE
 //#define PREVIEW_MODE
 #define NO_USB
 //#define STOPLIGHTS_MODE
@@ -222,7 +222,16 @@ int main()
 
     while(true)
     {
-        pthread_cond_wait(&algorithm_signal, &algorithm_signal_mutex);
+        static auto frame_delay_then = std::chrono::high_resolution_clock::now();
+        static double frame_delay_max = 0.0;
+        START_TIMER
+        ids.get_frame_to(ids_image);
+        auto frame_delay = (double)(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - frame_delay_then).count());
+        frame_delay_then = std::chrono::high_resolution_clock::now();
+        if(frame_delay > frame_delay_max)
+            frame_delay_max = frame_delay;
+        STOP_TIMER("Copying from Camera")
+        START_TIMER
         //FPS
         if(licznik_czas == 0)
         {
@@ -230,14 +239,9 @@ int main()
             clock_gettime(CLOCK_MONOTONIC, &start);
         }
         //FPS
-        START_TIMER
+
         // Get new frame from camera
 
-        pthread_mutex_lock(&ids.frame_mutex);
-        ids.ids_frame.copyTo(ids_image);
-        pthread_mutex_unlock(&ids.frame_mutex);
-        STOP_TIMER("Copying from Camera")
-        START_TIMER
         // Process frame
 //        laneDetector.Undist(ids_image, undist_frame, cameraMatrix, distCoeffs);
 //        STOP_TIMER("Distort")
@@ -357,8 +361,8 @@ int main()
 #ifdef PREVIEW_MODE
         if(++denom >= IMSHOW_RATE){
             denom = 0;
-            //cv::imshow("0 Frame", ids_image);
-            cv::imshow("1.1 Yellow Line", frame_out_yellow);
+            cv::imshow("0 Frame", ids_image);
+//            cv::imshow("1.1 Yellow Line", frame_out_yellow);
             //cv::imshow("4.1 Yellow Vector", yellow_vector_frame);
             cv::waitKey(1);
         }
@@ -371,7 +375,8 @@ int main()
             clock_gettime(CLOCK_MONOTONIC, &end);
             seconds = (end.tv_sec - start.tv_sec);
             fps  =  200*1e6 / TIMER2_DIFF;
-            std::cout <<"FPS: " << fps << std::endl;
+            std::cout <<"FPS: " << fps << " dt MAX: "<< frame_delay_max << "ms" << std::endl;
+            frame_delay_max = 0.0;
         }
         else
         {
