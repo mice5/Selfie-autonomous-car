@@ -13,7 +13,7 @@ const int max_off = 200;
 const int max_derive = Height;
 const int max_pixel = 100;
 
-int rect_slider[5]={40,10,20,Height,0};
+int rect_slider[5]={35,10,20,Height,0};
 
 
 void left_trackbar( int, void* )

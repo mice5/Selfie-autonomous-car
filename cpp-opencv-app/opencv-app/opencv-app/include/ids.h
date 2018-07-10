@@ -65,7 +65,7 @@ public:
     int sharpness_slider=1;
     UINT Sharpness=1;
 
-    int Gamma =100;
+    int Gamma =200;
 
     char* pMem = NULL;
     int memID = 0;

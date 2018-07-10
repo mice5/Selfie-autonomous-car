@@ -33,10 +33,10 @@
 // Debug mode --> display data
 //#define RACE_MODE
 #define IMSHOW_RATE 1
-#define DEBUG_MODE
-//#define PREVIEW_MODE
+//#define DEBUG_MODE
+#define PREVIEW_MODE
 #define NO_USB
-//#define STOPLIGHTS_MODE
+#define STOPLIGHTS_MODE
 #define IDS_MODE
 
 
@@ -361,8 +361,8 @@ int main()
 #ifdef PREVIEW_MODE
         if(++denom >= IMSHOW_RATE){
             denom = 0;
-            cv::imshow("0 Frame", ids_image);
-//            cv::imshow("1.1 Yellow Line", frame_out_yellow);
+//            cv::imshow("0 Frame", ids_image);
+            cv::imshow("1.1 Yellow Line", frame_out_yellow);
             //cv::imshow("4.1 Yellow Vector", yellow_vector_frame);
             cv::waitKey(1);
         }

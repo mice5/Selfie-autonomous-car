@@ -20,7 +20,7 @@ using namespace cv;
 #define STOP_OPTTIMER(name)
 #endif
 
-int param = 2;
+int param = 5;
 bool rectangle_optimize(Mat& point_mat,spline_t& spl)
 {
     INIT_OPTTIMER
@@ -365,7 +365,7 @@ void optimization(vector<Point2i> input_vector,spline_t &spl)
     }
 
 }
-void new_optimization(vector<Point> pts_vector,spline_t& spl)
+void new_optimization(vector<Point> pts_vector,spline_t& spl,Mat &preview)
 {
     int rec_height = Height/number_of_rec_raws;
     int rec_width = Width/number_of_rec_cols;//szerokość prostokąta wykrywania
@@ -414,12 +414,17 @@ void new_optimization(vector<Point> pts_vector,spline_t& spl)
             {
                 find_flag = 1;
                 spline_points.push_back(Point(max_col_index*rec_width+0.5*rec_width,r*rec_height+0.5*rec_height));
+                rectangle(preview,Point(max_col_index*rec_width,r*rec_height),Point(max_col_index*rec_width+rec_width,r*rec_height+rec_height),CV_RGB(255,0,255));
+
             }
         }
         else
         {
             for(int c = max_col_index-param;c<max_col_index+param;c++)
             {
+                if(c>number_of_rec_cols-1 || c<0)
+                    continue;
+
                 if(grid[c][r]>max)
                 {
                     max = grid[c][r];
@@ -428,6 +433,8 @@ void new_optimization(vector<Point> pts_vector,spline_t& spl)
             }
 
             spline_points.push_back(Point(max_col_index*rec_width+0.5*rec_width,r*rec_height+0.5*rec_height));
+
+            rectangle(preview,Point(max_col_index*rec_width,r*rec_height),Point(max_col_index*rec_width+rec_width,r*rec_height+rec_height),CV_RGB(255,0,255));
         }
     }
 
@@ -454,7 +461,11 @@ void new_optimization(vector<Point> pts_vector,spline_t& spl)
             spline_set.push_back(spline_points.back());//ostatni punkt
         }
 
-
+        for(int i=0;i<spline_set.size()-1;i++)
+        {
+            if(spline_set[i+1].x==spline_set[i].x)
+                spline_set[i].x=spline_set[i].x+1;
+        }
         spl.set_spline(spline_set);
     }
 
