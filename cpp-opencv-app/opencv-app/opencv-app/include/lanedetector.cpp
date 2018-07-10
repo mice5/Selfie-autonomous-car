@@ -28,16 +28,16 @@ static int H_yellow = 110, V_yellow = 49, S_yellow = 102, Thresh_yellow = 50;
 static int H_white = 123, V_white =102, S_white = 60, Thresh_white = 33;
 static int A_value = 50;
 static int K_value = 50;
-static int Acc_slider = 2;
-static int Acc_value = 2;
-static int Acc_filt = 15;
-static int Acc_filt_slider = 15;
+static int Acc_slider = 1;
+static int Acc_value = 1;
+static int Acc_filt = 25;
+static int Acc_filt_slider = 25;
 
 static int R_down = 89, G_down = 0, B_down = 0;
 static int R_up = 112, G_up = 255, B_up = 255;
 
-static int H_down = 0, S_down = 162, V_down = 0;
-static int H_up = 40, S_up = 255, V_up = 255;
+static int H_down = 20, S_down = 54, V_down = 176;
+static int H_up = 45, S_up = 255, V_up = 255;
 
 static int H_down_white = 48, S_down_white = 104, V_down_white = 94;
 static int H_up_white = 143, S_up_white = 207, V_up_white = 183;

@@ -1,7 +1,7 @@
 #include "main.h"
 #include <time.h>
 
-#define TIMING
+//#define TIMING
 
 #ifdef TIMING
 #include <chrono>
@@ -162,11 +162,11 @@ while(1)
     {
         y_line_detect = 1;
 
-//        points_to_mat(y_mat,y_point_vector);
+        points_to_mat(y_mat,y_point_vector);
         STOP_TIMER("points_to_mat")
         START_TIMER
-//        rectangle_optimize(y_mat,y_spline);
-        new_optimization(y_point_vector,y_spline);
+        rectangle_optimize(y_mat,y_spline);
+//        optimization(y_point_vector,y_spline);
         STOP_TIMER("rectangle_optimize")
         START_TIMER
     }
@@ -174,11 +174,11 @@ while(1)
     {
         w_line_detect = 1;
 
-//        points_to_mat(w_mat,w_point_vector);
+        points_to_mat(w_mat,w_point_vector);
         STOP_TIMER("points_to_mat")
         START_TIMER
-//        rectangle_optimize(w_mat,w_spline);
-        new_optimization(w_point_vector,w_spline);
+        rectangle_optimize(w_mat,w_spline);
+//        optimization(w_point_vector,w_spline);
         STOP_TIMER("rectangle_optimize")
         START_TIMER
     }
@@ -197,7 +197,7 @@ while(1)
     }
     else if(y_line_detect)
     {
-        one_line_planner(y_spline,0,trajectory_path);
+        one_line_planner(y_spline,100,trajectory_path);
         STOP_TIMER("one_line_planner")
         START_TIMER
         trajectory_tangent.calculate(trajectory_path,rect_slider[3]);
@@ -207,7 +207,7 @@ while(1)
     }
     else if(w_line_detect)
     {
-        one_line_planner(w_spline,0,trajectory_path);
+        one_line_planner(w_spline,100,trajectory_path);
         STOP_TIMER("one_line_planner")
         START_TIMER
         trajectory_tangent.calculate(trajectory_path,rect_slider[3]);
@@ -242,9 +242,8 @@ while(1)
      {
         uint32_t angle_to_send;
         angle_to_send = angle_sum/1;
-        angle_to_send = left_slider[1];
-        velocity = left_slider[0];
-        //velocity = 1000;
+
+        velocity = 2000;
         //send data to STM
         USB_COM.data_pack(velocity,angle_to_send,usb_from_vision,&to_send);
         USB_COM.send_buf(to_send);

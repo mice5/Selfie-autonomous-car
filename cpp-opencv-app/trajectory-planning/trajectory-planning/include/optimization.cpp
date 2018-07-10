@@ -4,7 +4,7 @@
 using namespace std;
 using namespace cv;
 
-#define OPTTIMING
+//#define OPTTIMING
 
 #ifdef OPTTIMING
 #include <chrono>
@@ -272,7 +272,7 @@ void optimization(vector<Point2i> input_vector,spline_t &spl)
     int rec_height = Height/number_of_rec_raws;
     int rec_width = Width/number_of_rec_cols;//szerokość prostokąta wykrywania
 
-    vector<Point> spl_points;
+    std::vector<Point2i> spl_points;
 
     int points_number[number_of_rec_raws][number_of_rec_cols];
     for(int i=0;i<number_of_rec_raws;i++)
@@ -285,7 +285,7 @@ void optimization(vector<Point2i> input_vector,spline_t &spl)
     for(int i=0;i<input_vector.size();i++)
     {   int x = input_vector[i].x/rec_width;
         int y = input_vector[i].y/rec_height;
-        points_number[y][x]++;
+        points_number[x][y]++;
     }
 
 
@@ -363,104 +363,5 @@ void optimization(vector<Point2i> input_vector,spline_t &spl)
     {
 
     }
-
-}
-void new_optimization(vector<Point> pts_vector,spline_t& spl)
-{
-    int rec_height = Height/number_of_rec_raws;
-    int rec_width = Width/number_of_rec_cols;//szerokość prostokąta wykrywania
-    int grid[number_of_rec_cols][number_of_rec_raws];
-
-    vector<Point> spline_points;
-
-    for(int c =0;c<number_of_rec_cols;c++)
-    {
-        for(int r =0;r<number_of_rec_raws;r++)
-        {
-            grid[c][r] = 0;
-        }
-    }
-
-
-
-    for(int i = 0;i<pts_vector.size();i++)
-    {
-        int x = pts_vector[i].x/rec_width;
-        int y = pts_vector[i].y/rec_height;
-
-        grid[x][y] = grid[x][y]+1;
-    }
-
-    int max_col_index = 0;
-
-    int find_flag = 0;
-
-    for(int r=number_of_rec_raws-1;r>0;r--)
-    {
-        int max =0;
-
-        if(find_flag ==0)
-        {
-            for(int c=0;c<number_of_rec_cols;c++)
-            {
-                if(grid[c][r]>max)
-                {
-                    max = grid[c][r];
-                    max_col_index = c;
-                }
-            }
-
-            if(max>0)
-            {
-                find_flag = 1;
-                spline_points.push_back(Point(max_col_index*rec_width+0.5*rec_width,r*rec_height+0.5*rec_height));
-            }
-        }
-        else
-        {
-            for(int c = max_col_index-param;c<max_col_index+param;c++)
-            {
-                if(grid[c][r]>max)
-                {
-                    max = grid[c][r];
-                    max_col_index = c;
-                }
-            }
-
-            spline_points.push_back(Point(max_col_index*rec_width+0.5*rec_width,r*rec_height+0.5*rec_height));
-        }
-    }
-
-    if(spline_points.size()>2)
-    {
-        vector<Point> spline_set;
-
-        //minimalna liczba punktow
-        if(spline_points.size()<6)
-        {
-
-        spline_set.push_back(spline_points[0]);//pierwszy punkt
-        spline_set.push_back(spline_points[1]);//drugi punkt
-        spline_set.push_back(spline_points.back());//ostatni punkt
-
-        }
-
-        //jezeli wiecej punktow to wez wiecej do spline
-        else
-        {
-            spline_set.push_back(spline_points[0]);//pierwszy punkt
-            for(int i =2;i<spline_points.size()/2;i++)
-                spline_set.push_back(spline_points[i]);
-            spline_set.push_back(spline_points.back());//ostatni punkt
-        }
-
-
-        spl.set_spline(spline_set);
-    }
-
-    else//nie wykryto
-    {
-    }
-
 
 }
