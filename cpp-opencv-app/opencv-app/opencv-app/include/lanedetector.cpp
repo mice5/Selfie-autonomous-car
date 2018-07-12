@@ -30,14 +30,14 @@ static int A_value = 50;
 static int K_value = 50;
 static int Acc_slider = 1;
 static int Acc_value = 1;
-static int Acc_filt = 25;
-static int Acc_filt_slider = 25;
+static int Acc_filt = 15;
+static int Acc_filt_slider = 15;
 
 static int R_down = 89, G_down = 0, B_down = 0;
 static int R_up = 112, G_up = 255, B_up = 255;
 
-static int H_down = 20, S_down = 54, V_down = 176;
-static int H_up = 45, S_up = 255, V_up = 255;
+static int H_down = 0, S_down = 0, V_down = 250;
+static int H_up = 255, S_up = 255, V_up = 255;
 
 static int H_down_white = 48, S_down_white = 104, V_down_white = 94;
 static int H_up_white = 143, S_up_white = 207, V_up_white = 183;
@@ -131,7 +131,7 @@ void LaneDetector::CreateTrackbars()
     cv::namedWindow("5 Cone Detect", 1);
 
     cv::createTrackbar("Acc", "3.3 Line Accuracy", &Acc_value, 255, NULL);
-    cv::createTrackbar("Acc_filt", "3.3 Line Accuracy", &Acc_filt, 20, NULL);
+    cv::createTrackbar("Acc_filt", "3.3 Line Accuracy", &Acc_filt, 50, NULL);
     cv::createTrackbar("Rdown", "5 Cone Detect", &R_down, 255, NULL);
     cv::createTrackbar("Rup", "5 Cone Detect", &R_up, 255, NULL);
     cv::createTrackbar("Gdown", "5 Cone Detect", &G_down, 255, NULL);
