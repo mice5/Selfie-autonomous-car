@@ -1,5 +1,6 @@
 #include "usb.hpp"
 
+
 USB_STM::USB_STM()
 {
 
@@ -108,8 +109,7 @@ void USB_STM::send_buf(data_container &to_send)
 }
 
 
-void USB_STM::read_buf(int buf_size,float* velocity, uint16_t *tf_mini)
-
+void USB_STM::read_buf(int buf_size,float& velocity, uint16_t &tf_mini,uint8_t &taranis_3_pos,uint8_t &taranis_reset_gear)
 {
     unsigned char buf[buf_size];
     int read_state = read(fd, &buf, buf_size) ;
@@ -120,7 +120,6 @@ void USB_STM::read_buf(int buf_size,float* velocity, uint16_t *tf_mini)
         //for(int i = 0; i < buf_size; i++)
         //{
             //std::cout << (int)buf[i]<<"\t";
-
         //}
     //4 byte --> float union
     union
@@ -135,11 +134,14 @@ void USB_STM::read_buf(int buf_size,float* velocity, uint16_t *tf_mini)
      u.b[3]=buf[6];
 
      //car velocity
-     *velocity = u.f;
+     velocity = u.f;
 
      //tf mini distance
-     *tf_mini = buf[7];
-     *tf_mini = (*tf_mini<<8) | buf[8];
+     tf_mini = buf[7];
+     tf_mini = (tf_mini<<8) | buf[8];
+
+     taranis_3_pos = buf[9];
+     taranis_reset_gear = buf[10];
 
     std::cout << std::endl;
     }
@@ -150,8 +152,7 @@ void USB_STM::data_pack(uint32_t velo,uint32_t ang,std::vector<uint32_t>flags,da
     unsigned char char_flags[4]; //convert uint32_flags to unsigned char
     for(int i=0;i<4;i++)
     {
-        if(flags[i]>0)
-            char_flags[i]=255;
+        char_flags[i]=flags[i];
     }
 
     unsigned char pom[4];
@@ -168,10 +169,10 @@ void USB_STM::data_pack(uint32_t velo,uint32_t ang,std::vector<uint32_t>flags,da
         container->data[i+4] = pom[i];
     }
 
-    container->data[8] = 0 ;//char_flags[0];
-    container->data[9] = 0 ;//char_flags[1];
-    container->data[10] = 0;//char_flags[2];
-    container->data[11]= 0;//char_flags[3];
+    container->data[8] = char_flags[0];
+    container->data[9] = char_flags[1];
+    container->data[10] = char_flags[2];
+    container->data[11]= char_flags[3];
 
     uint32_to_char_tab(flags[4],pom);
     for(int i=0;i<4;i++){

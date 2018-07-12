@@ -1,7 +1,7 @@
 #include "main.h"
 #include <time.h>
 
-//#define TIMING
+#define TIMING
 
 #ifdef TIMING
 #include <chrono>
@@ -76,6 +76,10 @@ int main(int argc, char** argv)
     tangent y_tangent;
     tangent w_tangent;
     tangent trajectory_tangent;
+    tangent middle_tangent;
+
+    //interpolation
+    poly2_interp rzad2;
 
 
     //sharedmemory
@@ -103,6 +107,12 @@ int main(int argc, char** argv)
     data_container to_send;
     uint32_t velocity;
     uint32_t angle;
+
+
+    float car_velocity;
+    uint16_t tf_mini_distance;
+    uint8_t taranis_3_pos;
+    uint8_t taranis_reset_gear;
     USB_COM.init();//init
 
     init_trackbars();
@@ -162,11 +172,12 @@ while(1)
     {
         y_line_detect = 1;
 
-        points_to_mat(y_mat,y_point_vector);
+//        points_to_mat(y_mat,y_point_vector);
         STOP_TIMER("points_to_mat")
         START_TIMER
-        rectangle_optimize(y_mat,y_spline);
-//        optimization(y_point_vector,y_spline);
+//        rectangle_optimize(y_mat,y_spline);
+        new_optimization(y_point_vector,y_spline,y_mat);
+        rzad2.calculate_coef(y_point_vector);
         STOP_TIMER("rectangle_optimize")
         START_TIMER
     }
@@ -174,11 +185,11 @@ while(1)
     {
         w_line_detect = 1;
 
-        points_to_mat(w_mat,w_point_vector);
+//        points_to_mat(w_mat,w_point_vector);
         STOP_TIMER("points_to_mat")
         START_TIMER
-        rectangle_optimize(w_mat,w_spline);
-//        optimization(w_point_vector,w_spline);
+//        rectangle_optimize(w_mat,w_spline);
+        new_optimization(w_point_vector,w_spline,w_mat);
         STOP_TIMER("rectangle_optimize")
         START_TIMER
     }
@@ -202,6 +213,10 @@ while(1)
         START_TIMER
         trajectory_tangent.calculate(trajectory_path,rect_slider[3]);
         trajectory_tangent.angle();
+
+        middle_tangent.calculate(trajectory_path,240);
+        trajectory_tangent.angle();
+        middle_tangent.angle();
         STOP_TIMER("trajectory_tangent")
         START_TIMER
     }
@@ -234,7 +249,7 @@ while(1)
 ///////////////////////////////////////////////////////////////////////////////////////////
      #if defined(RACE_MODE) || defined(DEBUG_MODE)
 
-     angle = (trajectory_tangent.angle_deg+30)*10;
+     angle = ((0.7*middle_tangent.angle_deg + 0.3*trajectory_tangent.angle_deg)+30)*10;
      angle_sum+=angle;
      average_angle_counter++;
 
@@ -242,15 +257,14 @@ while(1)
      {
         uint32_t angle_to_send;
         angle_to_send = angle_sum/1;
-
-        velocity = 2000;
+        velocity = 3000;
         //send data to STM
         USB_COM.data_pack(velocity,angle_to_send,usb_from_vision,&to_send);
         USB_COM.send_buf(to_send);
 
 
         //read 12 byte data from stm 0-2 3-6 velocity 7-8 tf_mini 9-10 futaba gears
-        USB_COM.read_buf(12,&car_velocity,&tf_mini_distance);
+        USB_COM.read_buf(12,car_velocity,tf_mini_distance,taranis_3_pos,taranis_reset_gear);
 
         //read data from STM
         angle_sum = 0;
@@ -289,11 +303,12 @@ while(1)
         if(w_line_detect)
         w_spline.draw(wy_mat,CV_RGB(255,255,255));
 
+
         trajectory_path.draw(wy_mat,CV_RGB(0,255,0));
         trajectory_tangent.draw(wy_mat,CV_RGB(100,100,100));
 
 
-        label  = "traj_ang: "+ std::to_string(trajectory_tangent.angle_deg);
+        label  = "traj_ang: "+ std::to_string(0.3*middle_tangent.angle_deg + 0.7*trajectory_tangent.angle_deg);
         putText(wy_mat, label, Point(450, 40), FONT_HERSHEY_SIMPLEX, 0.5, CV_RGB(0,255,0), 1.0);
 
         //show white line mat

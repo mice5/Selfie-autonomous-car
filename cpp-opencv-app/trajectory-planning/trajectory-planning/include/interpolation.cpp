@@ -92,12 +92,10 @@ void poly2_interp::calculate_coef(vector<Point> pts){
 void poly2_interp::draw(Mat& frame,const Scalar& col)
 {
     cout<<a<<endl<<b<<endl<<c<<endl;
-    for (int i=0;i<640;i++){
+    for (int i=0;i<360;i++){
         Point pom;
         Vec3b  color;
       pom.y = a*i*i+b*i+c;
-      if(pom.y>480){}
-      pom.x= i;
 
 
       color = frame.at<Vec3b>(pom);
